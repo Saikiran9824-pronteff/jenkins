@@ -43,7 +43,7 @@
     <target name="api-draft" depends="validate">
         <echo message="📦 Checking draft API ${api.name}:${api.version}..." />
 
-        <!-- Check if API draft exists using grep -->
+        <!-- List all draft APIs -->
         <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
             <arg value="-c"/>
             <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
@@ -56,12 +56,18 @@
         <echo message="API exists? ${api.exists}" />
 
         <!-- Conditional create/update -->
-        <antcall target="api-create-if-needed" unless="api.exists"/>
-        <antcall target="api-update-if-needed" if="api.exists"/>
+        <if>
+            <isset property="api.exists"/>
+            <then>
+                <antcall target="api-update"/>
+            </then>
+            <else>
+                <antcall target="api-create"/>
+            </else>
+        </if>
     </target>
 
-    <!-- Create API draft if needed -->
-    <target name="api-create-if-needed">
+    <target name="api-create">
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
@@ -73,8 +79,7 @@
         </exec>
     </target>
 
-    <!-- Update API draft if exists -->
-    <target name="api-update-if-needed">
+    <target name="api-update">
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
@@ -91,7 +96,7 @@
     <target name="product-draft">
         <echo message="📦 Checking draft Product ${product.name}:${product.version}" />
 
-        <!-- Check if Product draft exists using grep -->
+        <!-- List all draft products -->
         <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
             <arg value="-c"/>
             <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
@@ -104,12 +109,18 @@
         <echo message="Product exists? ${product.exists}" />
 
         <!-- Conditional create/update -->
-        <antcall target="product-create-if-needed" unless="product.exists"/>
-        <antcall target="product-update-if-needed" if="product.exists"/>
+        <if>
+            <isset property="product.exists"/>
+            <then>
+                <antcall target="product-update"/>
+            </then>
+            <else>
+                <antcall target="product-create"/>
+            </else>
+        </if>
     </target>
 
-    <!-- Create Product draft if needed -->
-    <target name="product-create-if-needed">
+    <target name="product-create">
         <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
@@ -121,8 +132,7 @@
         </exec>
     </target>
 
-    <!-- Update Product draft if exists -->
-    <target name="product-update-if-needed">
+    <target name="product-update">
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
