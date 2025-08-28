@@ -20,11 +20,11 @@
         <exec executable="apic" failonerror="true">
             <arg value="login" />
             <arg value="--server" />
-            <arg value="https://apic-server.company.com" /> <!-- 🔧 replace with your APIC mgmt server -->
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" /> <!-- 🔧 replace with your APIC mgmt server -->
             <arg value="--username" />
-            <arg value="admin@test.com" /> <!-- 🔧 replace -->
+            <arg value="umesh" /> <!-- 🔧 replace -->
             <arg value="--password" />
-            <arg value="MyStrongPassword123" /> <!-- 🔧 replace -->
+            <arg value="!n0r1t5@C" /> <!-- 🔧 replace -->
             <arg value="--realm" />
             <arg value="provider/default-idp-2" />
         </exec>
