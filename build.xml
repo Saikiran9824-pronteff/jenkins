@@ -4,38 +4,38 @@
     <!-- ========================
          General, Defaults & Inputs
          ======================== -->
-    <!-- Jenkins will pass these via "Invoke Ant" -> Properties or via job parameters -->
     <property name="env"                  value="dev"/>
     <property name="API_NAME"             value=""/>
     <property name="PRODUCT_NAME"         value=""/>
     <property name="CATALOG_NAME"         value=""/>
-    <!-- true | false — when false, we stop after pushing drafts -->
     <property name="publish"              value="true"/>
 
-    <!-- APIC CLI path; override if apic isn't on PATH -->
+    <!-- APIC CLI path -->
     <property name="apic.bin"             value="apic"/>
 
-    <!-- Safe defaults; override in environments/${env}.properties or Jenkins properties -->
+    <!-- Safe defaults -->
     <property name="APIC_SERVER"          value=""/>
     <property name="APIC_REALM"           value="provider/default-idp-1"/>
     <property name="ORG_NAME"             value=""/>
-    <!-- Prefer to supply APIC_USERNAME and APIC_PASSWORD via Jenkins Credentials Binding -->
     <property name="APIC_USERNAME"        value="${env.APIC_USERNAME}"/>
     <property name="APIC_PASSWORD"        value="${env.APIC_PASSWORD}"/>
-
-    <!-- Optional: when using self-signed certs -->
     <property name="APIC_INSECURE"        value="false"/>
 
-    <!-- Load environment-scoped properties (server, org, realm, etc.) -->
+    <!-- Load environment-scoped properties -->
     <property file="environments/${env}.properties"/>
 
-    <!-- Derived paths (repo structure: ./apis and ./products) -->
+    <!-- Derived paths -->
     <property name="api.file"     value="${basedir}/apis/${API_NAME}.yaml"/>
     <property name="product.file" value="${basedir}/products/${PRODUCT_NAME}.yaml"/>
 
-    <!-- Resolve whether we should publish -->
+    <!-- Resolve publish flag -->
     <condition property="do.publish">
         <equals arg1="${publish}" arg2="true"/>
+    </condition>
+
+    <!-- Helper: insecure login flag -->
+    <condition property="login.insecure" value="--insecure" else="">
+        <istrue value="${APIC_INSECURE}"/>
     </condition>
 
     <!-- ================
@@ -78,11 +78,7 @@
             <arg value="--username"/><arg value="${APIC_USERNAME}"/>
             <arg value="--password"/><arg value="${APIC_PASSWORD}"/>
             <arg value="--realm"/><arg value="${APIC_REALM}"/>
-            <!-- Insecure TLS (if needed) -->
-            <condition property="insecure.flag">
-                <istrue value="${APIC_INSECURE}"/>
-            </condition>
-            <arg if:set="insecure.flag" value="--insecure"/>
+            <arg line="${login.insecure}"/>
         </exec>
     </target>
 
