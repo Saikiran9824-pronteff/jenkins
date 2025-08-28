@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="apic-cicd" default="ci" basedir=".">
 
-    <!-- ================== Properties (from Jenkins params) ================== -->
+    <!-- ================== Properties ================== -->
     <property name="api.dir" location="apis"/>
     <property name="product.dir" location="products"/>
     <property name="catalog.name" value="${CATALOG_NAME}"/>
@@ -11,7 +11,7 @@
     <property name="product.version" value="${PRODUCT_VERSION}"/>
     <property name="publish" value="${publish}"/>
 
-    <!-- ================== Targets ================== -->
+    <!-- ================== Main CI target ================== -->
     <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
 
     <!-- ================== Login ================== -->
@@ -43,7 +43,7 @@
     <target name="api-draft" depends="validate">
         <echo message="📦 Checking draft API ${api.name}:${api.version}..." />
 
-        <!-- List all draft APIs in org -->
+        <!-- List all draft APIs -->
         <exec executable="apic" outputproperty="api.list" failonerror="true">
             <arg value="draft-apis:list-all"/>
             <arg value="--server"/>
@@ -52,20 +52,18 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if draft API exists -->
+        <!-- Check if API exists -->
         <condition property="api.exists">
-            <matches string="${api.list}" pattern="(?m)^\Q${api.name}:${api.version}\E\s"/>
+            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version}\s"/>
         </condition>
 
-        <!-- Create or update -->
-        <antcall target="api-create"/>
-        <antcall target="api-update"/>
+        <!-- Conditional create/update -->
+        <antcall target="api-create-if-needed" unless="api.exists"/>
+        <antcall target="api-update-if-needed" if="api.exists"/>
     </target>
 
-    <!-- Create API draft -->
-    <target name="api-create">
-        <fail message="API draft already exists, skipping create." if="api.exists"/>
-        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
+    <target name="api-create-if-needed">
+        <echo message="🆕 Draft API does not exist, creating ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
             <arg value="--server"/>
@@ -76,10 +74,8 @@
         </exec>
     </target>
 
-    <!-- Update API draft -->
-    <target name="api-update">
-        <fail message="API draft does not exist, skipping update." unless="api.exists"/>
-        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
+    <target name="api-update-if-needed">
+        <echo message="🔄 Draft API exists, updating ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
             <arg value="--server"/>
@@ -95,7 +91,7 @@
     <target name="product-draft">
         <echo message="📦 Checking draft Product ${product.name}:${product.version}..." />
 
-        <!-- List all draft Products in org -->
+        <!-- List all draft products -->
         <exec executable="apic" outputproperty="product.list" failonerror="true">
             <arg value="draft-products:list-all"/>
             <arg value="--server"/>
@@ -104,20 +100,18 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if draft Product exists -->
+        <!-- Check if Product exists -->
         <condition property="product.exists">
-            <matches string="${product.list}" pattern="(?m)^\Q${product.name}:${product.version}\E\s"/>
+            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version}\s"/>
         </condition>
 
-        <!-- Create or update -->
-        <antcall target="product-create"/>
-        <antcall target="product-update"/>
+        <!-- Conditional create/update -->
+        <antcall target="product-create-if-needed" unless="product.exists"/>
+        <antcall target="product-update-if-needed" if="product.exists"/>
     </target>
 
-    <!-- Create Product draft -->
-    <target name="product-create">
-        <fail message="Product draft already exists, skipping create." if="product.exists"/>
-        <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
+    <target name="product-create-if-needed">
+        <echo message="🆕 Draft Product does not exist, creating ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
             <arg value="--server"/>
@@ -128,10 +122,8 @@
         </exec>
     </target>
 
-    <!-- Update Product draft -->
-    <target name="product-update">
-        <fail message="Product draft does not exist, skipping update." unless="product.exists"/>
-        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
+    <target name="product-update-if-needed">
+        <echo message="🔄 Draft Product exists, updating ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
             <arg value="--server"/>
