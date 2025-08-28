@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="apic-cicd" default="ci" basedir=".">
 
@@ -16,7 +15,7 @@
     <!-- APIC CLI path; override if apic isn't on PATH -->
     <property name="apic.bin"             value="apic"/>
 
-    <!-- Safe defaults; override in environments/<env>.properties or Jenkins properties -->
+    <!-- Safe defaults; override in environments/${env}.properties or Jenkins properties -->
     <property name="APIC_SERVER"          value=""/>
     <property name="APIC_REALM"           value="provider/default-idp-1"/>
     <property name="ORG_NAME"             value=""/>
