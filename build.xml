@@ -15,7 +15,7 @@
 
     <!-- Safe defaults -->
     <property name="APIC_SERVER"          value=""/>
-    <property name="APIC_REALM"           value="provider/default-idp-1"/>
+    <property name="APIC_REALM"           value="provider/default-idp-2"/>
     <property name="ORG_NAME"             value=""/>
     <property name="APIC_USERNAME"        value="${env.APIC_USERNAME}"/>
     <property name="APIC_PASSWORD"        value="${env.APIC_PASSWORD}"/>
