@@ -52,9 +52,16 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if API exists -->
+        <!-- Escape dots in version for regex -->
+        <property name="api.version.regex" value="${api.version}"/>
+        <replaceregexp by="\\." flags="" property="api.version.regex">
+            <regexp pattern="\\."/>
+            <substitution value="\\."/>
+        </replaceregexp>
+
+        <!-- Check if API exists safely -->
         <condition property="api.exists">
-            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version}\s"/>
+            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version.regex}\s"/>
         </condition>
 
         <!-- Conditional create/update -->
@@ -100,9 +107,16 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if Product exists -->
+        <!-- Escape dots in version for regex -->
+        <property name="product.version.regex" value="${product.version}"/>
+        <replaceregexp by="\\." flags="" property="product.version.regex">
+            <regexp pattern="\\."/>
+            <substitution value="\\."/>
+        </replaceregexp>
+
+        <!-- Check if Product exists safely -->
         <condition property="product.exists">
-            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version}\s"/>
+            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version.regex}\s"/>
         </condition>
 
         <!-- Conditional create/update -->
