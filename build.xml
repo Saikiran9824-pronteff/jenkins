@@ -11,7 +11,7 @@
     <property name="product.version" value="${PRODUCT_VERSION}"/>
     <property name="publish" value="${publish}"/>
 
-    <!-- ================== Targets ================== -->
+    <!-- ================== Main CI Target ================== -->
     <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
 
     <!-- ================== Login ================== -->
@@ -40,30 +40,17 @@
     </target>
 
     <!-- ================== API Draft ================== -->
-    <target name="api-draft" depends="validate">
-        <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />
+    <target name="api-draft" depends="validate,maybe-api-create,maybe-api-update">
+        <echo message="📦 Completed API draft check for ${api.name}:${api.version}" />
+    </target>
 
-        <!-- List all APIs in catalog -->
-        <exec executable="apic" outputproperty="api.list" failonerror="true">
-            <arg value="apis:list-all"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="-c"/>
-            <arg value="prod"/>
-            <arg value="--scope"/>
-            <arg value="catalog"/>
-        </exec>
+    <!-- Conditional targets for API -->
+    <target name="maybe-api-create" unless="api.exists">
+        <antcall target="api-create"/>
+    </target>
 
-        <!-- Check if API exists -->
-        <condition property="api.exists">
-            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
-        </condition>
-
-        <!-- Run the correct target based on existence -->
-        <antcall target="api-create" unless="api.exists"/>
-        <antcall target="api-update" if="api.exists"/>
+    <target name="maybe-api-update" if="api.exists">
+        <antcall target="api-update"/>
     </target>
 
     <!-- Create API draft -->
@@ -94,30 +81,17 @@
     </target>
 
     <!-- ================== Product Draft ================== -->
-    <target name="product-draft">
-        <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />
+    <target name="product-draft" depends="maybe-product-create,maybe-product-update">
+        <echo message="📦 Completed Product draft check for ${product.name}:${product.version}" />
+    </target>
 
-        <!-- List all products in catalog -->
-        <exec executable="apic" outputproperty="product.list" failonerror="true">
-            <arg value="products:list-all"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="-c"/>
-            <arg value="prod"/>
-            <arg value="--scope"/>
-            <arg value="catalog"/>
-        </exec>
+    <!-- Conditional targets for Product -->
+    <target name="maybe-product-create" unless="product.exists">
+        <antcall target="product-create"/>
+    </target>
 
-        <!-- Check if Product exists -->
-        <condition property="product.exists">
-            <contains string="${product.list}" substring="${product.name}:${product.version}"/>
-        </condition>
-
-        <!-- Run the correct target based on existence -->
-        <antcall target="product-create" unless="product.exists"/>
-        <antcall target="product-update" if="product.exists"/>
+    <target name="maybe-product-update" if="product.exists">
+        <antcall target="product-update"/>
     </target>
 
     <!-- Create Product draft -->
