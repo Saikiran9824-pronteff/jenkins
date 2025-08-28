@@ -14,65 +14,65 @@
 
     <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
 
-    <!-- Hardcoded login (temporary) -->
+    <!-- Hardcoded login only -->
     <target name="login">
-        <echo message="🔐 Logging in to API Connect (hardcoded login)..." />
+        <echo message="🔐 Logging in to API Connect (hardcoded login, params still dynamic)..." />
         <exec executable="apic" failonerror="true">
-            <arg value="login"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--username"/>
-            <arg value="umesh"/>
-            <arg value="--password"/>
-            <arg value="!n0r1t5@C"/>
-            <arg value="--realm"/>
-            <arg value="provider/default-idp-2"/>
+            <arg value="login" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" /> <!-- 🔧 replace with your APIC mgmt server -->
+            <arg value="--username" />
+            <arg value="umesh" /> <!-- 🔧 replace -->
+            <arg value="--password" />
+            <arg value="!n0r1t5@C" /> <!-- 🔧 replace -->
+            <arg value="--realm" />
+            <arg value="provider/default-idp-2" />
         </exec>
     </target>
 
     <!-- Validate API YAML -->
     <target name="validate">
-        <echo message="✅ Validating API YAML for ${api.name}"/>
+        <echo message="✅ Validating API YAML for ${api.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="validate"/>
-            <arg value="${api.dir}/${api.name}.yaml"/>
+            <arg value="validate" />
+            <arg value="${api.dir}/${api.name}.yaml" />
         </exec>
     </target>
 
     <!-- Create Draft API -->
     <target name="api-draft">
-        <echo message="📦 Creating draft API ${api.name}"/>
+        <echo message="📦 Creating draft API ${api.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="draft-apis:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${api.dir}/${api.name}.yaml"/>
+            <arg value="draft-apis:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" />
+            <arg value="${api.dir}/${api.name}.yaml" />
         </exec>
     </target>
 
     <!-- Create Draft Product -->
     <target name="product-draft">
-        <echo message="📦 Creating draft Product ${product.name}"/>
+        <echo message="📦 Creating draft Product ${product.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="draft-products:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
+            <arg value="draft-products:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" />
+            <arg value="${product.dir}/${product.name}.yaml" />
         </exec>
     </target>
 
     <!-- Publish Product (only if publish=true) -->
     <target name="publish-product" if="publish">
-        <echo message="🚀 Publishing Product ${product.name} to catalog ${catalog.name}"/>
+        <echo message="🚀 Publishing Product ${product.name} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="products:publish"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
-            <arg value="--catalog"/>
-            <arg value="${catalog.name}"/>
+            <arg value="products:publish" />
+            <arg value="${product.dir}/${product.name}.yaml" />
+            <arg value="--catalog" />
+            <arg value="${catalog.name}" />
         </exec>
     </target>
 
