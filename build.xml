@@ -41,40 +41,55 @@
         </exec>
     </target>
 
-    <!-- Create or Update Draft API -->
-    <target name="api-draft">
-        <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}" />
-        <exec executable="apic" failonerror="false" resultproperty="api.create.result">
-            <arg value="draft-apis:create" />
-            <arg value="--server" />
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
-            <arg value="--org" />
-            <arg value="indusapi-np" />
-            <arg value="${api.dir}/${api.name}.yaml" />
+    <!-- =========================
+         API Draft: Create or Update
+         ========================= -->
+    <target name="api-draft" depends="validate">
+        <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />
+
+        <!-- List all APIs in the catalog -->
+        <exec executable="apic" outputproperty="api.list" failonerror="true">
+            <arg value="apis:list-all"/>
+            <arg value="--scope"/>
+            <arg value="catalog"/>
+            <arg value="--catalog"/>
+            <arg value="sandbox"/>
         </exec>
 
-        <condition property="api.create.failed">
-            <not>
-                <equals arg1="${api.create.result}" arg2="0"/>
-            </not>
+        <!-- Check if the API exists -->
+        <condition property="api.exists">
+            <contains string="${api.list}" substring="${api.name}:${api.version}" />
         </condition>
 
-        <antcall target="api-update" />
+        <!-- Call create or update -->
+        <antcall target="api-create" unless="api.exists"/>
+        <antcall target="api-update" if="api.exists"/>
     </target>
 
-    <!-- Update Draft API -->
-    <target name="api-update" if="api.create.failed">
+    <!-- Create API draft -->
+    <target name="api-create">
+        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:create"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- Update API draft -->
+    <target name="api-update">
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
-            <arg value="draft-apis:update" />
-            <arg value="--server" />
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
-            <arg value="--org" />
-            <arg value="indusapi-np" />
-            <!-- Required NAME:VERSION -->
-            <arg value="${api.name}:${api.version}" />
-            <!-- Draft API YAML file -->
-            <arg value="${api.dir}/${api.name}.yaml" />
+            <arg value="draft-apis:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.name}:${api.version}"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
         </exec>
     </target>
 
@@ -108,9 +123,7 @@
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--org" />
             <arg value="indusapi-np" />
-            <!-- Required NAME:VERSION -->
             <arg value="${product.name}:${product.version}" />
-            <!-- Draft Product YAML file -->
             <arg value="${product.dir}/${product.name}.yaml" />
         </exec>
     </target>
