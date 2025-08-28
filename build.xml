@@ -52,16 +52,9 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Escape dots in version for regex -->
-        <property name="api.version.regex" value="${api.version}"/>
-        <replaceregexp by="\\." flags="" property="api.version.regex">
-            <regexp pattern="\\."/>
-            <substitution value="\\."/>
-        </replaceregexp>
-
-        <!-- Check if API exists safely -->
+        <!-- Check if API exists -->
         <condition property="api.exists">
-            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version.regex}\s"/>
+            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
         </condition>
 
         <!-- Conditional create/update -->
@@ -69,8 +62,9 @@
         <antcall target="api-update-if-needed" if="api.exists"/>
     </target>
 
+    <!-- Create API draft if needed -->
     <target name="api-create-if-needed">
-        <echo message="🆕 Draft API does not exist, creating ${api.name}:${api.version}" />
+        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
             <arg value="--server"/>
@@ -81,8 +75,9 @@
         </exec>
     </target>
 
+    <!-- Update API draft if exists -->
     <target name="api-update-if-needed">
-        <echo message="🔄 Draft API exists, updating ${api.name}:${api.version}" />
+        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
             <arg value="--server"/>
@@ -96,7 +91,7 @@
 
     <!-- ================== Product Draft ================== -->
     <target name="product-draft">
-        <echo message="📦 Checking draft Product ${product.name}:${product.version}..." />
+        <echo message="📦 Checking draft Product ${product.name}:${product.version}" />
 
         <!-- List all draft products -->
         <exec executable="apic" outputproperty="product.list" failonerror="true">
@@ -107,16 +102,9 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Escape dots in version for regex -->
-        <property name="product.version.regex" value="${product.version}"/>
-        <replaceregexp by="\\." flags="" property="product.version.regex">
-            <regexp pattern="\\."/>
-            <substitution value="\\."/>
-        </replaceregexp>
-
-        <!-- Check if Product exists safely -->
+        <!-- Check if Product exists -->
         <condition property="product.exists">
-            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version.regex}\s"/>
+            <contains string="${product.list}" substring="${product.name}:${product.version}"/>
         </condition>
 
         <!-- Conditional create/update -->
@@ -124,8 +112,9 @@
         <antcall target="product-update-if-needed" if="product.exists"/>
     </target>
 
+    <!-- Create Product draft if needed -->
     <target name="product-create-if-needed">
-        <echo message="🆕 Draft Product does not exist, creating ${product.name}:${product.version}" />
+        <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
             <arg value="--server"/>
@@ -136,8 +125,9 @@
         </exec>
     </target>
 
+    <!-- Update Product draft if exists -->
     <target name="product-update-if-needed">
-        <echo message="🔄 Draft Product exists, updating ${product.name}:${product.version}" />
+        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
             <arg value="--server"/>
