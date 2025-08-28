@@ -7,7 +7,9 @@
 
     <property name="catalog.name" value="${CATALOG_NAME}"/>
     <property name="api.name" value="${API_NAME}"/>
+    <property name="api.version" value="${API_VERSION}"/>
     <property name="product.name" value="${PRODUCT_NAME}"/>
+    <property name="product.version" value="${PRODUCT_VERSION}"/>
     <property name="publish" value="${publish}"/>
 
     <!-- ================== Targets ================== -->
@@ -41,7 +43,7 @@
 
     <!-- Create or Update Draft API -->
     <target name="api-draft">
-        <echo message="📦 Creating or Updating draft API ${api.name}" />
+        <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="false" resultproperty="api.create.result">
             <arg value="draft-apis:create" />
             <arg value="--server" />
@@ -62,20 +64,23 @@
 
     <!-- Update Draft API -->
     <target name="api-update" if="api.create.failed">
-        <echo message="🔄 Updating existing draft API ${api.name}" />
+        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update" />
             <arg value="--server" />
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--org" />
             <arg value="indusapi-np" />
+            <!-- Required NAME:VERSION -->
+            <arg value="${api.name}:${api.version}" />
+            <!-- Draft API YAML file -->
             <arg value="${api.dir}/${api.name}.yaml" />
         </exec>
     </target>
 
     <!-- Create or Update Draft Product -->
     <target name="product-draft">
-        <echo message="📦 Creating or Updating draft Product ${product.name}" />
+        <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="false" resultproperty="product.create.result">
             <arg value="draft-products:create" />
             <arg value="--server" />
@@ -96,20 +101,23 @@
 
     <!-- Update Draft Product -->
     <target name="product-update" if="product.create.failed">
-        <echo message="🔄 Updating existing draft Product ${product.name}" />
+        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update" />
             <arg value="--server" />
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--org" />
             <arg value="indusapi-np" />
+            <!-- Required NAME:VERSION -->
+            <arg value="${product.name}:${product.version}" />
+            <!-- Draft Product YAML file -->
             <arg value="${product.dir}/${product.name}.yaml" />
         </exec>
     </target>
 
     <!-- Publish Product (only if publish=true) -->
     <target name="publish-product" if="publish">
-        <echo message="🚀 Publishing Product ${product.name} to catalog ${catalog.name}" />
+        <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
             <arg value="products:publish" />
             <arg value="${product.dir}/${product.name}.yaml" />
