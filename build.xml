@@ -61,14 +61,13 @@
             <contains string="${api.list}" substring="${api.name}:${api.version}"/>
         </condition>
 
-        <!-- Call create/update targets -->
-        <antcall target="api-create"/>
-        <antcall target="api-update"/>
+        <!-- Run the correct target based on existence -->
+        <antcall target="api-create" unless="api.exists"/>
+        <antcall target="api-update" if="api.exists"/>
     </target>
 
     <!-- Create API draft -->
     <target name="api-create">
-        <fail message="API draft already exists, skipping create." if="api.exists"/>
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
@@ -82,7 +81,6 @@
 
     <!-- Update API draft -->
     <target name="api-update">
-        <fail message="API draft does not exist, skipping update." unless="api.exists"/>
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
@@ -117,14 +115,13 @@
             <contains string="${product.list}" substring="${product.name}:${product.version}"/>
         </condition>
 
-        <!-- Call create/update targets -->
-        <antcall target="product-create"/>
-        <antcall target="product-update"/>
+        <!-- Run the correct target based on existence -->
+        <antcall target="product-create" unless="product.exists"/>
+        <antcall target="product-update" if="product.exists"/>
     </target>
 
     <!-- Create Product draft -->
     <target name="product-create">
-        <fail message="Product draft already exists, skipping create." if="product.exists"/>
         <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
@@ -138,7 +135,6 @@
 
     <!-- Update Product draft -->
     <target name="product-update">
-        <fail message="Product draft does not exist, skipping update." unless="product.exists"/>
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
