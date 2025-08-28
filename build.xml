@@ -43,7 +43,11 @@
     <target name="api-draft">
         <echo message="📦 Creating draft API ${api.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="drafts:create" />
+            <arg value="draft-apis:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" /> <!-- 🔧 replace with your org -->
             <arg value="${api.dir}/${api.name}.yaml" />
         </exec>
     </target>
@@ -52,7 +56,11 @@
     <target name="product-draft">
         <echo message="📦 Creating draft Product ${product.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="drafts:create" />
+            <arg value="draft-products:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" /> <!-- 🔧 replace with your org -->
             <arg value="${product.dir}/${product.name}.yaml" />
         </exec>
     </target>
@@ -62,9 +70,13 @@
         <echo message="🚀 Publishing Product ${product.name} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
             <arg value="products:publish" />
-            <arg value="${product.dir}/${product.name}.yaml" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" /> <!-- 🔧 replace with your org -->
             <arg value="--catalog" />
             <arg value="${catalog.name}" />
+            <arg value="${product.dir}/${product.name}.yaml" />
         </exec>
     </target>
 
