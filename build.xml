@@ -20,11 +20,11 @@
         <exec executable="apic" failonerror="true">
             <arg value="login" />
             <arg value="--server" />
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" /> <!-- 🔧 replace with your APIC mgmt server -->
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--username" />
-            <arg value="umesh" /> <!-- 🔧 replace -->
+            <arg value="umesh" />
             <arg value="--password" />
-            <arg value="!n0r1t5@C" /> <!-- 🔧 replace -->
+            <arg value="!n0r1t5@C" />
             <arg value="--realm" />
             <arg value="provider/default-idp-2" />
         </exec>
@@ -39,11 +39,32 @@
         </exec>
     </target>
 
-    <!-- Create Draft API -->
+    <!-- Create or Update Draft API -->
     <target name="api-draft">
-        <echo message="📦 Creating draft API ${api.name}" />
-        <exec executable="apic" failonerror="true">
+        <echo message="📦 Creating or Updating draft API ${api.name}" />
+        <exec executable="apic" failonerror="false" resultproperty="api.create.result">
             <arg value="draft-apis:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" />
+            <arg value="${api.dir}/${api.name}.yaml" />
+        </exec>
+
+        <condition property="api.create.failed">
+            <not>
+                <equals arg1="${api.create.result}" arg2="0"/>
+            </not>
+        </condition>
+
+        <antcall target="api-update" />
+    </target>
+
+    <!-- Update Draft API -->
+    <target name="api-update" if="api.create.failed">
+        <echo message="🔄 Updating existing draft API ${api.name}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:update" />
             <arg value="--server" />
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--org" />
@@ -52,11 +73,32 @@
         </exec>
     </target>
 
-    <!-- Create Draft Product -->
+    <!-- Create or Update Draft Product -->
     <target name="product-draft">
-        <echo message="📦 Creating draft Product ${product.name}" />
-        <exec executable="apic" failonerror="true">
+        <echo message="📦 Creating or Updating draft Product ${product.name}" />
+        <exec executable="apic" failonerror="false" resultproperty="product.create.result">
             <arg value="draft-products:create" />
+            <arg value="--server" />
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
+            <arg value="--org" />
+            <arg value="indusapi-np" />
+            <arg value="${product.dir}/${product.name}.yaml" />
+        </exec>
+
+        <condition property="product.create.failed">
+            <not>
+                <equals arg1="${product.create.result}" arg2="0"/>
+            </not>
+        </condition>
+
+        <antcall target="product-update" />
+    </target>
+
+    <!-- Update Draft Product -->
+    <target name="product-update" if="product.create.failed">
+        <echo message="🔄 Updating existing draft Product ${product.name}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-products:update" />
             <arg value="--server" />
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com" />
             <arg value="--org" />
