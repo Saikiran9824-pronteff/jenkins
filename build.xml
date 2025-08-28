@@ -1,21 +1,141 @@
-<target name="api-draft" depends="validate">
-    <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="apic-cicd" default="ci" basedir=".">
 
-    <!-- List all APIs in the catalog -->
-    <exec executable="apic" outputproperty="api.list" failonerror="true">
-        <arg value="apis:list-all"/>
-        <arg value="--scope"/>
-        <arg value="catalog"/>
-        <arg value="--catalog"/>
-        <arg value="prod"/>
-    </exec>
+    <!-- ================== Properties ================== -->
+    <property name="api.dir" location="apis"/>
+    <property name="product.dir" location="products"/>
 
-    <!-- Check if the API exists -->
-    <condition property="api.exists">
-        <contains string="${api.list}" substring="${api.name}:${api.version}" />
-    </condition>
+    <property name="catalog.name" value="${CATALOG_NAME}"/>
+    <property name="api.name" value="${API_NAME}"/>
+    <property name="api.version" value="${API_VERSION}"/>
+    <property name="product.name" value="${PRODUCT_NAME}"/>
+    <property name="product.version" value="${PRODUCT_VERSION}"/>
+    <property name="publish" value="${publish}"/>
 
-    <!-- Call create or update -->
-    <antcall target="api-create" unless="api.exists"/>
-    <antcall target="api-update" if="api.exists"/>
-</target>
+    <!-- ================== Targets ================== -->
+
+    <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
+
+    <!-- Login -->
+    <target name="login">
+        <echo message="🔐 Logging in to API Connect (hardcoded login)..." />
+        <exec executable="apic" failonerror="true">
+            <arg value="login"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--username"/>
+            <arg value="umesh"/>
+            <arg value="--password"/>
+            <arg value="!n0r1t5@C"/>
+            <arg value="--realm"/>
+            <arg value="provider/default-idp-2"/>
+        </exec>
+    </target>
+
+    <!-- Validate API YAML -->
+    <target name="validate">
+        <echo message="✅ Validating API YAML for ${api.name}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="validate"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- API Draft: Create or Update -->
+    <target name="api-draft" depends="validate">
+        <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />
+
+        <!-- List all APIs -->
+        <exec executable="apic" outputproperty="api.list" failonerror="true">
+            <arg value="apis:list-all"/>
+            <arg value="--scope"/>
+            <arg value="catalog"/>
+            <arg value="--catalog"/>
+            <arg value="prod"/>
+        </exec>
+
+        <!-- Check if API exists -->
+        <condition property="api.exists">
+            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
+        </condition>
+
+        <!-- Call create or update -->
+        <antcall target="api-create" unless="api.exists"/>
+        <antcall target="api-update" if="api.exists"/>
+    </target>
+
+    <!-- Create API -->
+    <target name="api-create">
+        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:create"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- Update API -->
+    <target name="api-update">
+        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.name}:${api.version}"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- Product Draft: Create or Update -->
+    <target name="product-draft">
+        <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />
+
+        <exec executable="apic" failonerror="false" resultproperty="product.create.result">
+            <arg value="draft-products:create"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${product.dir}/${product.name}.yaml"/>
+        </exec>
+
+        <condition property="product.create.failed">
+            <not>
+                <equals arg1="${product.create.result}" arg2="0"/>
+            </not>
+        </condition>
+
+        <antcall target="product-update"/>
+    </target>
+
+    <!-- Update Product -->
+    <target name="product-update" if="product.create.failed">
+        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-products:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${product.name}:${product.version}"/>
+            <arg value="${product.dir}/${product.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- Publish Product -->
+    <target name="publish-product" if="publish">
+        <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="products:publish"/>
+            <arg value="${product.dir}/${product.name}.yaml"/>
+            <arg value="--catalog"/>
+            <arg value="${catalog.name}"/>
+        </exec>
+    </target>
+
+</project>
