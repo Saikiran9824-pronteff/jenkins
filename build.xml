@@ -52,22 +52,18 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <echo message="Draft APIs in org: ${api.list}"/>
-
-        <!-- Check if API exists using regex -->
+        <!-- Check if API draft exists -->
         <condition property="api.exists">
-            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version}\s"/>
+            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version}\\s"/>
         </condition>
 
-        <echo message="API ${api.name}:${api.version} exists? ${api.exists}"/>
-
-        <!-- Call create/update targets -->
-        <antcall target="maybe-api-create"/>
-        <antcall target="maybe-api-update"/>
+        <!-- Create or Update -->
+        <antcall target="api-create"/>
+        <antcall target="api-update"/>
     </target>
 
-    <!-- Create API draft if it does not exist -->
-    <target name="maybe-api-create">
+    <!-- Create API draft -->
+    <target name="api-create">
         <fail message="API draft already exists, skipping create." if="api.exists"/>
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
@@ -80,8 +76,8 @@
         </exec>
     </target>
 
-    <!-- Update API draft if it exists -->
-    <target name="maybe-api-update">
+    <!-- Update API draft -->
+    <target name="api-update">
         <fail message="API draft does not exist, skipping update." unless="api.exists"/>
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
@@ -99,7 +95,7 @@
     <target name="product-draft">
         <echo message="📦 Checking draft Product ${product.name}:${product.version}..." />
 
-        <!-- List all draft products in org -->
+        <!-- List all draft Products in org -->
         <exec executable="apic" outputproperty="product.list" failonerror="true">
             <arg value="draft-products:list-all"/>
             <arg value="--server"/>
@@ -108,22 +104,18 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <echo message="Draft Products in org: ${product.list}"/>
-
-        <!-- Check if Product exists using regex -->
+        <!-- Check if Product draft exists -->
         <condition property="product.exists">
-            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version}\s"/>
+            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version}\\s"/>
         </condition>
 
-        <echo message="Product ${product.name}:${product.version} exists? ${product.exists}"/>
-
-        <!-- Call create/update targets -->
-        <antcall target="maybe-product-create"/>
-        <antcall target="maybe-product-update"/>
+        <!-- Create or Update -->
+        <antcall target="product-create"/>
+        <antcall target="product-update"/>
     </target>
 
-    <!-- Create Product draft if it does not exist -->
-    <target name="maybe-product-create">
+    <!-- Create Product draft -->
+    <target name="product-create">
         <fail message="Product draft already exists, skipping create." if="product.exists"/>
         <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
@@ -136,8 +128,8 @@
         </exec>
     </target>
 
-    <!-- Update Product draft if it exists -->
-    <target name="maybe-product-update">
+    <!-- Update Product draft -->
+    <target name="product-update">
         <fail message="Product draft does not exist, skipping update." unless="product.exists"/>
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
