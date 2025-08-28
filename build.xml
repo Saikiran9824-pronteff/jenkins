@@ -16,9 +16,9 @@
 
     <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
 
-    <!-- Login -->
+    <!-- Hardcoded Login -->
     <target name="login">
-        <echo message="🔐 Logging in to API Connect (hardcoded login)..." />
+        <echo message="🔐 Logging in to API Connect..." />
         <exec executable="apic" failonerror="true">
             <arg value="login"/>
             <arg value="--server"/>
@@ -41,22 +41,24 @@
         </exec>
     </target>
 
-    <!-- API Draft: Create or Update -->
+    <!-- =========================
+         API Draft: Create or Update
+         ========================= -->
     <target name="api-draft" depends="validate">
         <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />
 
-        <!-- List all APIs -->
+        <!-- List all APIs in the org -->
         <exec executable="apic" outputproperty="api.list" failonerror="true">
             <arg value="apis:list-all"/>
             <arg value="--scope"/>
             <arg value="catalog"/>
             <arg value="--catalog"/>
-            <arg value="prod"/>
+            <arg value="${catalog.name}"/>
         </exec>
 
-        <!-- Check if API exists -->
+        <!-- Check if the API exists -->
         <condition property="api.exists">
-            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
+            <contains string="${api.list}" substring="${api.name}:${api.version}" />
         </condition>
 
         <!-- Call create or update -->
@@ -64,7 +66,6 @@
         <antcall target="api-update" if="api.exists"/>
     </target>
 
-    <!-- Create API -->
     <target name="api-create">
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
@@ -77,7 +78,6 @@
         </exec>
     </target>
 
-    <!-- Update API -->
     <target name="api-update">
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
@@ -91,11 +91,31 @@
         </exec>
     </target>
 
-    <!-- Product Draft: Create or Update -->
+    <!-- =========================
+         Product Draft: Create or Update
+         ========================= -->
     <target name="product-draft">
         <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />
 
-        <exec executable="apic" failonerror="false" resultproperty="product.create.result">
+        <exec executable="apic" outputproperty="product.list" failonerror="true">
+            <arg value="products:list-all"/>
+            <arg value="--scope"/>
+            <arg value="catalog"/>
+            <arg value="--catalog"/>
+            <arg value="${catalog.name}"/>
+        </exec>
+
+        <condition property="product.exists">
+            <contains string="${product.list}" substring="${product.name}:${product.version}" />
+        </condition>
+
+        <antcall target="product-create" unless="product.exists"/>
+        <antcall target="product-update" if="product.exists"/>
+    </target>
+
+    <target name="product-create">
+        <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
+        <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
@@ -103,18 +123,9 @@
             <arg value="indusapi-np"/>
             <arg value="${product.dir}/${product.name}.yaml"/>
         </exec>
-
-        <condition property="product.create.failed">
-            <not>
-                <equals arg1="${product.create.result}" arg2="0"/>
-            </not>
-        </condition>
-
-        <antcall target="product-update"/>
     </target>
 
-    <!-- Update Product -->
-    <target name="product-update" if="product.create.failed">
+    <target name="product-update">
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
@@ -127,14 +138,16 @@
         </exec>
     </target>
 
-    <!-- Publish Product -->
+    <!-- =========================
+         Publish Product (if enabled)
+         ========================= -->
     <target name="publish-product" if="publish">
         <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
-            <arg value="products:publish"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
-            <arg value="--catalog"/>
-            <arg value="${catalog.name}"/>
+            <arg value="products:publish" />
+            <arg value="${product.dir}/${product.name}.yaml" />
+            <arg value="--catalog" />
+            <arg value="${catalog.name}" />
         </exec>
     </target>
 
