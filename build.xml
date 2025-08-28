@@ -12,11 +12,9 @@
     <property name="publish" value="${publish}"/>
 
     <!-- ================== Targets ================== -->
-
-    <!-- Main CI target -->
     <target name="ci" depends="login,validate,api-draft,product-draft,publish-product"/>
 
-    <!-- ================== Login ================== -->
+    <!-- Hardcoded login -->
     <target name="login">
         <echo message="🔐 Logging in to API Connect..." />
         <exec executable="apic" failonerror="true">
@@ -32,7 +30,7 @@
         </exec>
     </target>
 
-    <!-- ================== Validate API ================== -->
+    <!-- Validate API YAML -->
     <target name="validate">
         <echo message="✅ Validating API YAML for ${api.name}" />
         <exec executable="apic" failonerror="true">
@@ -41,7 +39,9 @@
         </exec>
     </target>
 
-    <!-- ================== API Draft: Create or Update ================== -->
+    <!-- =========================
+         API Draft: Create or Update
+         ========================= -->
     <target name="api-draft" depends="validate">
         <echo message="📦 Creating or Updating draft API ${api.name}:${api.version}..." />  
 
@@ -63,13 +63,15 @@
             <contains string="${api.list}" substring="${api.name}:${api.version}"/>
         </condition>
 
-        <!-- Call create or update -->
-        <antcall target="api-create" unless="api.exists"/>
-        <antcall target="api-update" if="api.exists"/>
+        <!-- Call create and update targets unconditionally -->
+        <antcall target="api-create"/>
+        <antcall target="api-update"/>
     </target>
 
     <!-- Create API draft -->
     <target name="api-create">
+        <!-- Skip execution if API exists -->
+        <fail message="API already exists, skipping create." if="api.exists"/>
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
@@ -83,6 +85,8 @@
 
     <!-- Update API draft -->
     <target name="api-update">
+        <!-- Skip execution if API does NOT exist -->
+        <fail message="API does not exist, skipping update." unless="api.exists"/>
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
@@ -95,9 +99,11 @@
         </exec>
     </target>
 
-    <!-- ================== Product Draft: Create or Update ================== -->
+    <!-- =========================
+         Product Draft: Create or Update
+         ========================= -->
     <target name="product-draft">
-        <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />
+        <echo message="📦 Creating or Updating draft Product ${product.name}:${product.version}" />  
 
         <!-- List all products in the catalog -->
         <exec executable="apic" outputproperty="product.list" failonerror="true">
@@ -112,18 +118,20 @@
             <arg value="catalog"/>
         </exec>
 
-        <!-- Check if product exists -->
+        <!-- Check if Product exists -->
         <condition property="product.exists">
             <contains string="${product.list}" substring="${product.name}:${product.version}"/>
         </condition>
 
-        <!-- Call create or update -->
-        <antcall target="product-create" unless="product.exists"/>
-        <antcall target="product-update" if="product.exists"/>
+        <!-- Call create and update targets unconditionally -->
+        <antcall target="product-create"/>
+        <antcall target="product-update"/>
     </target>
 
     <!-- Create Product draft -->
     <target name="product-create">
+        <!-- Skip if product exists -->
+        <fail message="Product already exists, skipping create." if="product.exists"/>
         <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
@@ -137,6 +145,8 @@
 
     <!-- Update Product draft -->
     <target name="product-update">
+        <!-- Skip if product does NOT exist -->
+        <fail message="Product does not exist, skipping update." unless="product.exists"/>
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
@@ -149,7 +159,7 @@
         </exec>
     </target>
 
-    <!-- ================== Publish Product ================== -->
+    <!-- Publish Product (only if publish=true) -->
     <target name="publish-product" if="publish">
         <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
