@@ -1,1 +1,162 @@
 
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="apic-cicd" default="ci" basedir=".">
+
+    <!-- ========================
+         General, Defaults & Inputs
+         ======================== -->
+    <!-- Jenkins will pass these via "Invoke Ant" -> Properties or via job parameters -->
+    <property name="env"                  value="dev"/>
+    <property name="API_NAME"             value=""/>
+    <property name="PRODUCT_NAME"         value=""/>
+    <property name="CATALOG_NAME"         value=""/>
+    <!-- true | false — when false, we stop after pushing drafts -->
+    <property name="publish"              value="true"/>
+
+    <!-- APIC CLI path; override if apic isn't on PATH -->
+    <property name="apic.bin"             value="apic"/>
+
+    <!-- Safe defaults; override in environments/<env>.properties or Jenkins properties -->
+    <property name="APIC_SERVER"          value=""/>
+    <property name="APIC_REALM"           value="provider/default-idp-1"/>
+    <property name="ORG_NAME"             value=""/>
+    <!-- Prefer to supply APIC_USERNAME and APIC_PASSWORD via Jenkins Credentials Binding -->
+    <property name="APIC_USERNAME"        value="${env.APIC_USERNAME}"/>
+    <property name="APIC_PASSWORD"        value="${env.APIC_PASSWORD}"/>
+
+    <!-- Optional: when using self-signed certs -->
+    <property name="APIC_INSECURE"        value="false"/>
+
+    <!-- Load environment-scoped properties (server, org, realm, etc.) -->
+    <property file="environments/${env}.properties"/>
+
+    <!-- Derived paths (repo structure: ./apis and ./products) -->
+    <property name="api.file"     value="${basedir}/apis/${API_NAME}.yaml"/>
+    <property name="product.file" value="${basedir}/products/${PRODUCT_NAME}.yaml"/>
+
+    <!-- Resolve whether we should publish -->
+    <condition property="do.publish">
+        <equals arg1="${publish}" arg2="true"/>
+    </condition>
+
+    <!-- ================
+         Utility Targets
+         ================ -->
+    <target name="check-tools">
+        <echo>🔎 Checking APIC CLI availability…</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="version"/>
+        </exec>
+    </target>
+
+    <target name="check-inputs">
+        <echo>📦 Validating required inputs…</echo>
+        <fail unless="API_NAME" message="API_NAME is required (e.g., loan-api)."/>
+        <fail unless="PRODUCT_NAME" message="PRODUCT_NAME is required (e.g., loan-product)."/>
+        <fail unless="CATALOG_NAME" message="CATALOG_NAME is required (e.g., dev/test/prod)."/>
+        <fail unless="APIC_SERVER" message="APIC_SERVER is required (set in environments/${env}.properties or Jenkins properties)."/>
+        <fail unless="ORG_NAME" message="ORG_NAME is required (set in environments/${env}.properties or Jenkins properties)."/>
+        <fail unless="APIC_USERNAME" message="APIC_USERNAME is required (use Jenkins Credentials Binding)."/>
+        <fail unless="APIC_PASSWORD" message="APIC_PASSWORD is required (use Jenkins Credentials Binding)."/>
+
+        <echo>🗂 API file:     ${api.file}</echo>
+        <echo>🗂 Product file: ${product.file}</echo>
+
+        <available file="${api.file}" property="api.file.exists"/>
+        <available file="${product.file}" property="product.file.exists"/>
+        <fail unless="api.file.exists" message="API YAML not found at ${api.file}"/>
+        <fail unless="product.file.exists" message="Product YAML not found at ${product.file}"/>
+    </target>
+
+    <!-- ================
+         Login / Logout
+         ================ -->
+    <target name="login" depends="check-tools,check-inputs">
+        <echo>🔐 Logging in to API Connect: ${APIC_SERVER} (realm: ${APIC_REALM})</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="login"/>
+            <arg value="--server"/><arg value="${APIC_SERVER}"/>
+            <arg value="--username"/><arg value="${APIC_USERNAME}"/>
+            <arg value="--password"/><arg value="${APIC_PASSWORD}"/>
+            <arg value="--realm"/><arg value="${APIC_REALM}"/>
+            <!-- Insecure TLS (if needed) -->
+            <condition property="insecure.flag">
+                <istrue value="${APIC_INSECURE}"/>
+            </condition>
+            <arg if:set="insecure.flag" value="--insecure"/>
+        </exec>
+    </target>
+
+    <target name="logout" unless="skip.logout">
+        <echo>🚪 Logging out of API Connect</echo>
+        <exec executable="${apic.bin}" failonerror="false">
+            <arg value="logout"/>
+            <arg value="--server"/><arg value="${APIC_SERVER}"/>
+        </exec>
+    </target>
+
+    <!-- =================
+         Validate YAMLs
+         ================= -->
+    <target name="validate" depends="login">
+        <echo>✅ Validating API YAML…</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="validate"/>
+            <arg value="${api.file}"/>
+        </exec>
+
+        <echo>✅ Validating Product YAML…</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="validate"/>
+            <arg value="${product.file}"/>
+        </exec>
+    </target>
+
+    <!-- ========================
+         Push Drafts (API/Product)
+         ======================== -->
+    <target name="push-api-draft" depends="validate">
+        <echo>📝 Pushing API draft to org: ${ORG_NAME}</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="drafts:push"/>
+            <arg value="${api.file}"/>
+            <arg value="--server"/><arg value="${APIC_SERVER}"/>
+            <arg value="--organization"/><arg value="${ORG_NAME}"/>
+        </exec>
+    </target>
+
+    <target name="push-product-draft" depends="push-api-draft">
+        <echo>📝 Pushing Product draft to org: ${ORG_NAME}</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="drafts:push"/>
+            <arg value="${product.file}"/>
+            <arg value="--server"/><arg value="${APIC_SERVER}"/>
+            <arg value="--organization"/><arg value="${ORG_NAME}"/>
+        </exec>
+    </target>
+
+    <!-- =================
+         Publish Product
+         ================= -->
+    <target name="publish-product" if="do.publish" depends="push-product-draft">
+        <echo>🚀 Publishing Product to catalog: ${CATALOG_NAME}</echo>
+        <exec executable="${apic.bin}" failonerror="true">
+            <arg value="publish"/>
+            <arg value="${product.file}"/>
+            <arg value="--server"/><arg value="${APIC_SERVER}"/>
+            <arg value="--organization"/><arg value="${ORG_NAME}"/>
+            <arg value="--catalog"/><arg value="${CATALOG_NAME}"/>
+        </exec>
+    </target>
+
+    <!-- Optional convenience targets -->
+    <target name="drafts-only" depends="push-product-draft" description="Validate and push drafts (no publish)">
+        <property name="skip.logout" value="true"/>
+        <echo>ℹ️ Drafts pushed. Skipping publish by request.</echo>
+    </target>
+
+    <!-- Main CI target -->
+    <target name="ci" depends="publish-product,logout"
+            description="Full CI: login → validate → push drafts → publish → logout"/>
+
+</project>
