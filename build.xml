@@ -40,34 +40,22 @@
     </target>
 
     <!-- ================== API Draft ================== -->
-    <target name="api-draft" depends="validate">
-        <echo message="📦 Checking draft API ${api.name}:${api.version}..." />
-
-        <!-- List all draft APIs -->
-        <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
-        </exec>
-
-        <condition property="api.exists">
-            <matches string="${api.exists.check}" pattern=".*"/>
-        </condition>
-
-        <echo message="API exists? ${api.exists}" />
-
-        <!-- Conditional create/update -->
-        <if>
-            <isset property="api.exists"/>
-            <then>
-                <antcall target="api-update"/>
-            </then>
-            <else>
-                <antcall target="api-create"/>
-            </else>
-        </if>
+    <target name="api-draft" depends="validate,api-create,api-update">
+        <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
     </target>
 
-    <target name="api-create">
+    <!-- Check if API exists -->
+    <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
+        <arg value="-c"/>
+        <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
+    </exec>
+
+    <condition property="api.exists">
+        <matches string="${api.exists.check}" pattern=".*"/>
+    </condition>
+
+    <!-- Create API draft if it does NOT exist -->
+    <target name="api-create" unless="api.exists">
         <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
@@ -79,7 +67,8 @@
         </exec>
     </target>
 
-    <target name="api-update">
+    <!-- Update API draft if it exists -->
+    <target name="api-update" if="api.exists">
         <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
@@ -93,34 +82,22 @@
     </target>
 
     <!-- ================== Product Draft ================== -->
-    <target name="product-draft">
-        <echo message="📦 Checking draft Product ${product.name}:${product.version}" />
-
-        <!-- List all draft products -->
-        <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
-        </exec>
-
-        <condition property="product.exists">
-            <matches string="${product.exists.check}" pattern=".*"/>
-        </condition>
-
-        <echo message="Product exists? ${product.exists}" />
-
-        <!-- Conditional create/update -->
-        <if>
-            <isset property="product.exists"/>
-            <then>
-                <antcall target="product-update"/>
-            </then>
-            <else>
-                <antcall target="product-create"/>
-            </else>
-        </if>
+    <target name="product-draft" depends="product-create,product-update">
+        <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
     </target>
 
-    <target name="product-create">
+    <!-- Check if Product exists -->
+    <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
+        <arg value="-c"/>
+        <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
+    </exec>
+
+    <condition property="product.exists">
+        <matches string="${product.exists.check}" pattern=".*"/>
+    </condition>
+
+    <!-- Create Product draft if it does NOT exist -->
+    <target name="product-create" unless="product.exists">
         <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
@@ -132,7 +109,8 @@
         </exec>
     </target>
 
-    <target name="product-update">
+    <!-- Update Product draft if it exists -->
+    <target name="product-update" if="product.exists">
         <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
