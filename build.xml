@@ -52,12 +52,12 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if API draft exists -->
+        <!-- Check if draft API exists -->
         <condition property="api.exists">
-            <matches string="${api.list}" pattern="(?m)^${api.name}:${api.version}\\s"/>
+            <matches string="${api.list}" pattern="(?m)^\Q${api.name}:${api.version}\E\s"/>
         </condition>
 
-        <!-- Create or Update -->
+        <!-- Create or update -->
         <antcall target="api-create"/>
         <antcall target="api-update"/>
     </target>
@@ -104,12 +104,12 @@
             <arg value="indusapi-np"/>
         </exec>
 
-        <!-- Check if Product draft exists -->
+        <!-- Check if draft Product exists -->
         <condition property="product.exists">
-            <matches string="${product.list}" pattern="(?m)^${product.name}:${product.version}\\s"/>
+            <matches string="${product.list}" pattern="(?m)^\Q${product.name}:${product.version}\E\s"/>
         </condition>
 
-        <!-- Create or Update -->
+        <!-- Create or update -->
         <antcall target="product-create"/>
         <antcall target="product-update"/>
     </target>
