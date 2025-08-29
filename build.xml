@@ -163,28 +163,29 @@
         <exec executable="git" failonerror="true">
             <arg value="config"/>
             <arg value="user.email"/>
-            <arg value="${env.GIT_COMMITTER_EMAIL}"/>
+            <arg value="${env.GIT_COMMITTER_EMAIL:-jenkins@local}"/>
         </exec>
         <exec executable="git" failonerror="true">
             <arg value="config"/>
             <arg value="user.name"/>
-            <arg value="${env.GIT_COMMITTER_NAME}"/>
+            <arg value="${env.GIT_COMMITTER_NAME:-Jenkins}"/>
         </exec>
 
-        <!-- Commit & Push -->
-        <exec executable="git" failonerror="true">
+        <!-- Add & Commit -->
+        <exec executable="git" failonerror="false">
             <arg value="add"/>
             <arg value="."/>
         </exec>
-        <exec executable="git" failonerror="true">
+        <exec executable="git" failonerror="false">
             <arg value="commit"/>
             <arg value="-m"/>
             <arg value="Backup ${API_NAME}:${API_VERSION} &amp; ${PRODUCT_NAME}:${API_VERSION} at ${build.timestamp}"/>
         </exec>
-        <exec executable="git" failonerror="true">
-            <arg value="push"/>
-            <arg value="origin"/>
-            <arg value="main"/>
+
+        <!-- Detect default branch dynamically and push -->
+        <exec executable="sh" failonerror="true">
+            <arg value="-c"/>
+            <arg value="branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p'); git push origin ${branch}"/>
         </exec>
     </target>
 
