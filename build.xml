@@ -159,6 +159,15 @@
         <copy file="apis/${API_NAME}_${API_VERSION}.yaml" todir="apis/${API_NAME}" overwrite="true"/>
         <copy file="products/${PRODUCT_NAME}_${API_VERSION}.yaml" todir="products/${PRODUCT_NAME}" overwrite="true"/>
 
+        <!-- Ensure Jenkins safe.directory -->
+        <exec executable="git" failonerror="false">
+            <arg value="config"/>
+            <arg value="--global"/>
+            <arg value="--add"/>
+            <arg value="safe.directory"/>
+            <arg value="/var/lib/jenkins/workspace/apic-cicd-pipeline"/>
+        </exec>
+
         <!-- Configure Git using Jenkins credentials -->
         <exec executable="git" failonerror="true">
             <arg value="config"/>
@@ -169,6 +178,17 @@
             <arg value="config"/>
             <arg value="user.name"/>
             <arg value="${env.GIT_COMMITTER_NAME:-Jenkins}"/>
+        </exec>
+
+        <!-- Ensure we are on main branch -->
+        <exec executable="git" failonerror="true">
+            <arg value="checkout"/>
+            <arg value="main"/>
+        </exec>
+        <exec executable="git" failonerror="false">
+            <arg value="pull"/>
+            <arg value="origin"/>
+            <arg value="main"/>
         </exec>
 
         <!-- Add & Commit -->
