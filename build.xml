@@ -12,7 +12,7 @@
     <property name="publish" value="${publish}"/>
 
     <!-- ================== Main CI target ================== -->
-    <target name="ci" depends="login,validate,api-process,product-process,publish-product"/>
+    <target name="ci" depends="login,validate,api-exists,api-action,product-exists,product-action,publish-product"/>
 
     <!-- ================== Login ================== -->
     <target name="login">
@@ -39,58 +39,110 @@
         </exec>
     </target>
 
-    <!-- ================== API Draft ================== -->
-    <target name="api-process" depends="validate">
-        <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
-
-        <!-- Check if API exists -->
-        <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
+    <!-- ================== Check if API exists ================== -->
+    <target name="api-exists" depends="validate">
+        <exec executable="apic" failonerror="false" outputproperty="api.list">
+            <arg value="draft-apis:list-all"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
         </exec>
 
         <condition property="api.exists">
-            <matches string="${api.exists.check}" pattern=".*"/>
+            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
         </condition>
-
-        <echo message="API exists? ${api.exists}" />
-
-        <!-- Create or Update -->
-        <sequential>
-            <fail unless="api.exists">
-                <echo message="API does not exist, creating draft..."/>
-            </fail>
-            <exec executable="apic" failonerror="true" outputproperty="api.result">
-                <arg line="${api.exists ? 'draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}.yaml' : 'draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}.yaml'}"/>
-            </exec>
-        </sequential>
+        <echo message="📦 API exists? ${api.exists}"/>
     </target>
 
-    <!-- ================== Product Draft ================== -->
-    <target name="product-process">
-        <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
+    <!-- ================== API Create / Update ================== -->
+    <target name="api-action">
+        <condition property="do.create">
+            <not>
+                <isset property="api.exists"/>
+            </not>
+        </condition>
 
-        <!-- Check if Product exists -->
-        <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
+        <antcall target="api-create" if="do.create"/>
+        <antcall target="api-update" unless="do.create"/>
+    </target>
+
+    <target name="api-create">
+        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:create"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <target name="api-update">
+        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-apis:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${api.name}:${api.version}"/>
+            <arg value="${api.dir}/${api.name}.yaml"/>
+        </exec>
+    </target>
+
+    <!-- ================== Check if Product exists ================== -->
+    <target name="product-exists">
+        <exec executable="apic" failonerror="false" outputproperty="product.list">
+            <arg value="draft-products:list-all"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
         </exec>
 
         <condition property="product.exists">
-            <matches string="${product.exists.check}" pattern=".*"/>
+            <contains string="${product.list}" substring="${product.name}:${product.version}"/>
+        </condition>
+        <echo message="📦 Product exists? ${product.exists}"/>
+    </target>
+
+    <!-- ================== Product Create / Update ================== -->
+    <target name="product-action">
+        <condition property="do.product.create">
+            <not>
+                <isset property="product.exists"/>
+            </not>
         </condition>
 
-        <echo message="Product exists? ${product.exists}" />
+        <antcall target="product-create" if="do.product.create"/>
+        <antcall target="product-update" unless="do.product.create"/>
+    </target>
 
-        <!-- Create or Update -->
-        <sequential>
-            <fail unless="product.exists">
-                <echo message="Product does not exist, creating draft..."/>
-            </fail>
-            <exec executable="apic" failonerror="true" outputproperty="product.result">
-                <arg line="${product.exists ? 'draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}.yaml' : 'draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}.yaml'}"/>
-            </exec>
-        </sequential>
+    <target name="product-create">
+        <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-products:create"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${product.dir}/${product.name}.yaml"/>
+        </exec>
+    </target>
+
+    <target name="product-update">
+        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-products:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${product.name}:${product.version}"/>
+            <arg value="${product.dir}/${product.name}.yaml"/>
+        </exec>
     </target>
 
     <!-- ================== Publish Product ================== -->
