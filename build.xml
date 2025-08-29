@@ -52,8 +52,8 @@
             </and>
         </condition>
 
-        <antcall target="api-update" />
-        <antcall target="api-create" />
+        <antcall target="api-update"/>
+        <antcall target="api-create"/>
     </target>
 
     <target name="api-create" unless="api.exists.true">
@@ -103,8 +103,8 @@
             </and>
         </condition>
 
-        <antcall target="product-update" />
-        <antcall target="product-create" />
+        <antcall target="product-update"/>
+        <antcall target="product-create"/>
     </target>
 
     <target name="product-create" unless="product.exists.true">
@@ -132,7 +132,7 @@
         </exec>
     </target>
 
-    <!-- Publish Product (fixed) -->
+    <!-- Publish Product -->
     <target name="publish" depends="product-process">
         <echo message="🚀 Publishing Product ${PRODUCT_NAME}_${API_VERSION}.yaml to catalog ${CATALOG_NAME}"/>
         <exec executable="apic" failonerror="true">
@@ -149,8 +149,43 @@
         </exec>
     </target>
 
+    <!-- Backup API & Product YAMLs per folder -->
+    <target name="backup" depends="publish">
+        <tstamp>
+            <format property="build.timestamp" pattern="yyyy-MM-dd_HH-mm-ss"/>
+        </tstamp>
+
+        <!-- Ensure per-API/Product folders exist -->
+        <mkdir dir="apis/${API_NAME}"/>
+        <mkdir dir="products/${PRODUCT_NAME}"/>
+
+        <!-- Copy API YAML -->
+        <copy file="apis/${API_NAME}_${API_VERSION}.yaml"
+              todir="apis/${API_NAME}" overwrite="true"/>
+
+        <!-- Copy Product YAML -->
+        <copy file="products/${PRODUCT_NAME}_${API_VERSION}.yaml"
+              todir="products/${PRODUCT_NAME}" overwrite="true"/>
+
+        <!-- Git commit -->
+        <exec executable="git" failonerror="true">
+            <arg value="add"/>
+            <arg value="."/>
+        </exec>
+        <exec executable="git" failonerror="true">
+            <arg value="commit"/>
+            <arg value="-m"/>
+            <arg value="Backup ${API_NAME}:${API_VERSION} & ${PRODUCT_NAME}:${API_VERSION} at ${build.timestamp}"/>
+        </exec>
+        <exec executable="git" failonerror="true">
+            <arg value="push"/>
+            <arg value="origin"/>
+            <arg value="main"/>
+        </exec>
+    </target>
+
     <!-- CI Pipeline -->
-    <target name="ci" depends="publish">
-        <echo message="🎉 CI/CD pipeline completed successfully!"/>
+    <target name="ci" depends="backup">
+        <echo message="🎉 CI/CD pipeline completed successfully with backup!"/>
     </target>
 </project>
