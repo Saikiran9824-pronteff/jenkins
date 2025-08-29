@@ -12,7 +12,7 @@
     <property name="publish" value="${publish}"/>
 
     <!-- ================== Main CI target ================== -->
-    <target name="ci" depends="login,validate,api-exists,api-action,product-exists,product-action,publish-product"/>
+    <target name="ci" depends="login,validate,api-process,product-process,publish-product"/>
 
     <!-- ================== Login ================== -->
     <target name="login">
@@ -39,116 +39,72 @@
         </exec>
     </target>
 
-    <!-- ================== Check if API exists ================== -->
-    <target name="api-exists" depends="validate">
-        <exec executable="apic" failonerror="false" outputproperty="api.list">
-            <arg value="draft-apis:list-all"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
+    <!-- ================== API Draft Process ================== -->
+    <target name="api-process" depends="validate">
+        <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
+
+        <!-- Check if API exists -->
+        <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
+            <arg value="-c"/>
+            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
         </exec>
 
         <condition property="api.exists">
-            <contains string="${api.list}" substring="${api.name}:${api.version}"/>
-        </condition>
-        <echo message="📦 API exists? ${api.exists}"/>
-    </target>
-
-    <!-- ================== API Create / Update ================== -->
-    <target name="api-action">
-        <condition property="do.create">
-            <not>
-                <isset property="api.exists"/>
-            </not>
+            <matches string="${api.exists.check}" pattern=".*"/>
         </condition>
 
-        <antcall target="api-create" if="do.create"/>
-        <antcall target="api-update" unless="do.create"/>
-    </target>
+        <echo message="API exists? ${api.exists}" />
 
-    <target name="api-create">
-        <echo message="🆕 Creating new draft API ${api.name}:${api.version}" />
-        <exec executable="apic" failonerror="true">
-            <arg value="draft-apis:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${api.dir}/${api.name}.yaml"/>
+        <!-- Create or Update using Bash branching -->
+        <exec executable="bash">
+            <arg value="-c"/>
+            <arg line="if [ '${api.exists}' = 'true' ]; then
+                            echo '🔄 Updating existing draft API ${api.name}:${api.version}';
+                            apic draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}.yaml;
+                      else
+                            echo '🆕 Creating new draft API ${api.name}:${api.version}';
+                            apic draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}.yaml;
+                      fi"/>
         </exec>
     </target>
 
-    <target name="api-update">
-        <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
-        <exec executable="apic" failonerror="true">
-            <arg value="draft-apis:update"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${api.name}:${api.version}"/>
-            <arg value="${api.dir}/${api.name}.yaml"/>
-        </exec>
-    </target>
+    <!-- ================== Product Draft Process ================== -->
+    <target name="product-process">
+        <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
 
-    <!-- ================== Check if Product exists ================== -->
-    <target name="product-exists">
-        <exec executable="apic" failonerror="false" outputproperty="product.list">
-            <arg value="draft-products:list-all"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
+        <!-- Check if Product exists -->
+        <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
+            <arg value="-c"/>
+            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
         </exec>
 
         <condition property="product.exists">
-            <contains string="${product.list}" substring="${product.name}:${product.version}"/>
-        </condition>
-        <echo message="📦 Product exists? ${product.exists}"/>
-    </target>
-
-    <!-- ================== Product Create / Update ================== -->
-    <target name="product-action">
-        <condition property="do.product.create">
-            <not>
-                <isset property="product.exists"/>
-            </not>
+            <matches string="${product.exists.check}" pattern=".*"/>
         </condition>
 
-        <antcall target="product-create" if="do.product.create"/>
-        <antcall target="product-update" unless="do.product.create"/>
-    </target>
+        <echo message="Product exists? ${product.exists}" />
 
-    <target name="product-create">
-        <echo message="🆕 Creating new draft Product ${product.name}:${product.version}" />
-        <exec executable="apic" failonerror="true">
-            <arg value="draft-products:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
-        </exec>
-    </target>
-
-    <target name="product-update">
-        <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
-        <exec executable="apic" failonerror="true">
-            <arg value="draft-products:update"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${product.name}:${product.version}"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
+        <!-- Create or Update using Bash branching -->
+        <exec executable="bash">
+            <arg value="-c"/>
+            <arg line="if [ '${product.exists}' = 'true' ]; then
+                            echo '🔄 Updating existing draft Product ${product.name}:${product.version}';
+                            apic draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}.yaml;
+                      else
+                            echo '🆕 Creating new draft Product ${product.name}:${product.version}';
+                            apic draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}.yaml;
+                      fi"/>
         </exec>
     </target>
 
     <!-- ================== Publish Product ================== -->
-    <target name="publish-product" if="publish">
+    <target name="publish-product">
+        <condition property="do.publish">
+            <isset property="publish"/>
+        </condition>
+
         <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
-        <exec executable="apic" failonerror="true">
+        <exec executable="apic" failonerror="true" if="do.publish">
             <arg value="products:publish"/>
             <arg value="${product.dir}/${product.name}.yaml"/>
             <arg value="--catalog"/>
