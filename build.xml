@@ -12,9 +12,9 @@
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--username"/>
-            <arg value="umesh"/>
+            <arg value="admin"/>
             <arg value="--password"/>
-            <arg value="!n0r1t5@C"/>
+            <arg value="Passw0rd!"/>
             <arg value="--realm"/>
             <arg value="provider/default-idp-2"/>
         </exec>
@@ -83,7 +83,7 @@
 
     <!-- Process Product -->
     <target name="product-process" depends="api-process">
-        <echo message="📦 Processing Product ${PRODUCT_NAME}..."/>
+        <echo message="📦 Processing Product ${PRODUCT_NAME}_${API_VERSION}..."/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:replace"/>
             <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
