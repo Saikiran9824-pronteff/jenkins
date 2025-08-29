@@ -32,7 +32,7 @@
 
     <!-- ================== Validate API ================== -->
     <target name="validate">
-        <echo message="✅ Validating API YAML for ${api.name}" />
+        <echo message="✅ Validating API YAML for ${api.name}_${api.version}" />
         <exec executable="apic" failonerror="true">
             <arg value="validate"/>
             <arg value="${api.dir}/${api.name}_${api.version}.yaml"/>
@@ -40,55 +40,51 @@
     </target>
 
     <!-- ================== API Draft ================== -->
-    <target name="api-process">
+    <target name="api-process" depends="validate">
         <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
 
-        <!-- Try update first -->
-        <exec executable="apic" failonerror="false">
-            <arg value="draft-apis:update"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${api.name}:${api.version}"/>
-            <arg value="${api.dir}/${api.name}_${api.version}.yaml"/>
+        <!-- Check if API exists -->
+        <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
+            <arg value="-c"/>
+            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
         </exec>
 
-        <!-- If update fails, create draft -->
-        <exec executable="apic" failonerror="false">
-            <arg value="draft-apis:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${api.dir}/${api.name}_${api.version}.yaml"/>
-        </exec>
+        <condition property="api.exists">
+            <matches string="${api.exists.check}" pattern=".*"/>
+        </condition>
+
+        <echo message="API exists? ${api.exists}" />
+
+        <!-- Update or Create API draft -->
+        <sequential>
+            <exec executable="apic" failonerror="true">
+                <arg line="${api.exists ? 'draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}_${api.version}.yaml' : 'draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}_${api.version}.yaml'}"/>
+            </exec>
+        </sequential>
     </target>
 
     <!-- ================== Product Draft ================== -->
     <target name="product-process">
         <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
 
-        <!-- Try update first -->
-        <exec executable="apic" failonerror="false">
-            <arg value="draft-products:update"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${product.name}:${product.version}"/>
-            <arg value="${product.dir}/${product.name}_${product.version}.yaml"/>
+        <!-- Check if Product exists -->
+        <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
+            <arg value="-c"/>
+            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
         </exec>
 
-        <!-- If update fails, create draft -->
-        <exec executable="apic" failonerror="false">
-            <arg value="draft-products:create"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--org"/>
-            <arg value="indusapi-np"/>
-            <arg value="${product.dir}/${product.name}_${product.version}.yaml"/>
-        </exec>
+        <condition property="product.exists">
+            <matches string="${product.exists.check}" pattern=".*"/>
+        </condition>
+
+        <echo message="Product exists? ${product.exists}" />
+
+        <!-- Update or Create Product draft -->
+        <sequential>
+            <exec executable="apic" failonerror="true">
+                <arg line="${product.exists ? 'draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}_${product.version}.yaml' : 'draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}_${product.version}.yaml'}"/>
+            </exec>
+        </sequential>
     </target>
 
     <!-- ================== Publish Product ================== -->
