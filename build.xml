@@ -81,16 +81,54 @@
         </exec>
     </target>
 
-    <!-- Process Product -->
-    <target name="product-process" depends="api-process">
-        <echo message="📦 Processing Product ${PRODUCT_NAME}_${API_VERSION}..."/>
+    <!-- Check Product existence -->
+    <target name="product-check" depends="api-process">
+        <echo message="🔎 Checking if Product exists..."/>
+        <exec executable="apic" failonerror="false" outputproperty="product.exists">
+            <arg value="draft-products:list-all"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+        </exec>
+        <echo message="Product exists? ${product.exists}"/>
+    </target>
+
+    <!-- Process Product: create or update -->
+    <target name="product-process" depends="product-check">
+        <condition property="product.exists.true">
+            <and>
+                <isset property="product.exists"/>
+                <matches string="${product.exists}" pattern=".*${PRODUCT_NAME}:${API_VERSION}.*"/>
+            </and>
+        </condition>
+
+        <antcall target="product-update"/>
+        <antcall target="product-create"/>
+    </target>
+
+    <target name="product-create" unless="product.exists.true">
+        <echo message="🆕 Creating new draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
-            <arg value="draft-products:replace"/>
+            <arg value="draft-products:create"/>
             <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
+        </exec>
+    </target>
+
+    <target name="product-update" if="product.exists.true">
+        <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
+        <exec executable="apic" failonerror="true">
+            <arg value="draft-products:update"/>
+            <arg value="--server"/>
+            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+            <arg value="--org"/>
+            <arg value="indusapi-np"/>
+            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
+            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
