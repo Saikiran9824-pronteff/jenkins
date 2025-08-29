@@ -1,101 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="apic-cicd" default="ci" basedir=".">
+<project name="apic-cicd-pipeline" default="ci" basedir=".">
 
-    <!-- ================== Properties ================== -->
-    <property name="api.dir" location="apis"/>
-    <property name="product.dir" location="products"/>
-    <property name="catalog.name" value="${CATALOG_NAME}"/>
-    <property name="api.name" value="${API_NAME}"/>
-    <property name="api.version" value="${API_VERSION}"/>
-    <property name="product.name" value="${PRODUCT_NAME}"/>
-    <property name="product.version" value="${PRODUCT_VERSION}"/>
-    <property name="publish" value="${publish}"/>
+    <!-- ================== PROPERTIES ================== -->
+    <property name="API_DIR" location="apis"/>
+    <property name="PRODUCT_DIR" location="products"/>
 
-    <!-- ================== Main CI target ================== -->
-    <target name="ci" depends="login,validate,api-process,product-process,publish-product"/>
+    <!-- File paths are built directly from Jenkins params -->
+    <property name="API_FILE" location="${API_DIR}/${API_NAME}.yaml"/>
+    <property name="PRODUCT_FILE" location="${PRODUCT_DIR}/${PRODUCT_NAME}.yaml"/>
 
-    <!-- ================== Login ================== -->
+    <!-- ================== TARGETS ================== -->
+
     <target name="login">
-        <echo message="🔐 Logging in to API Connect..." />
+        <echo message="🔐 Logging in to API Connect..."/>
         <exec executable="apic" failonerror="true">
-            <arg value="login"/>
-            <arg value="--server"/>
-            <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-            <arg value="--username"/>
-            <arg value="umesh"/>
-            <arg value="--password"/>
-            <arg value="!n0r1t5@C"/>
-            <arg value="--realm"/>
-            <arg value="provider/default-idp-2"/>
+            <arg line="login --server ${APIC_SERVER} --username ${APIC_USERNAME} --password ${APIC_PASSWORD} --realm provider/default-idp-2"/>
         </exec>
     </target>
 
-    <!-- ================== Validate API ================== -->
     <target name="validate">
-        <echo message="✅ Validating API YAML for ${api.name}_${api.version}" />
+        <echo message="✅ Validating API YAML for ${API_NAME}"/>
         <exec executable="apic" failonerror="true">
-            <arg value="validate"/>
-            <arg value="${api.dir}/${api.name}_${api.version}.yaml"/>
+            <arg line="validate ${API_FILE}"/>
         </exec>
     </target>
 
-    <!-- ================== API Draft ================== -->
-    <target name="api-process" depends="validate">
-        <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
-
-        <!-- Check if API exists -->
-        <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
+    <target name="api-process">
+        <echo message="📦 Processing API ${API_NAME}..."/>
+        <!-- First check if API already exists -->
+        <exec executable="apic" failonerror="false" resultproperty="api.exists">
+            <arg line="draft-apis:get --server ${APIC_SERVER} --org ${APIC_ORG} ${API_NAME}"/>
         </exec>
 
-        <condition property="api.exists">
-            <matches string="${api.exists.check}" pattern=".*"/>
+        <!-- Update if exists -->
+        <condition property="api.exists.true">
+            <equals arg1="${api.exists}" arg2="0"/>
         </condition>
 
-        <echo message="API exists? ${api.exists}" />
-
-        <!-- Update or Create API draft -->
-        <sequential>
-            <exec executable="apic" failonerror="true">
-                <arg line="${api.exists ? 'draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}_${api.version}.yaml' : 'draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}_${api.version}.yaml'}"/>
-            </exec>
-        </sequential>
+        <antcall target="api-update" inheritall="true" inheritrefs="true" />
+        <antcall target="api-create" inheritall="true" inheritrefs="true" />
     </target>
 
-    <!-- ================== Product Draft ================== -->
+    <target name="api-create" unless="api.exists.true">
+        <echo message="🆕 Creating draft API ${API_NAME}"/>
+        <exec executable="apic" failonerror="true">
+            <arg line="draft-apis:create --server ${APIC_SERVER} --org ${APIC_ORG} ${API_FILE}"/>
+        </exec>
+    </target>
+
+    <target name="api-update" if="api.exists.true">
+        <echo message="♻️ Updating draft API ${API_NAME}"/>
+        <exec executable="apic" failonerror="true">
+            <arg line="draft-apis:update --server ${APIC_SERVER} --org ${APIC_ORG} ${API_NAME} ${API_FILE}"/>
+        </exec>
+    </target>
+
     <target name="product-process">
-        <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
-
-        <!-- Check if Product exists -->
-        <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
-            <arg value="-c"/>
-            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
+        <echo message="📦 Processing Product ${PRODUCT_NAME}..."/>
+        <exec executable="apic" failonerror="true">
+            <arg line="draft-products:replace --server ${APIC_SERVER} --org ${APIC_ORG} ${PRODUCT_FILE}"/>
         </exec>
-
-        <condition property="product.exists">
-            <matches string="${product.exists.check}" pattern=".*"/>
-        </condition>
-
-        <echo message="Product exists? ${product.exists}" />
-
-        <!-- Update or Create Product draft -->
-        <sequential>
-            <exec executable="apic" failonerror="true">
-                <arg line="${product.exists ? 'draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}_${product.version}.yaml' : 'draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}_${product.version}.yaml'}"/>
-            </exec>
-        </sequential>
     </target>
 
-    <!-- ================== Publish Product ================== -->
-    <target name="publish-product" if="publish">
-        <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
+    <target name="publish">
+        <echo message="🚀 Publishing ${PRODUCT_NAME} to ${CATALOG_NAME}"/>
         <exec executable="apic" failonerror="true">
-            <arg value="products:publish"/>
-            <arg value="${product.dir}/${product.name}_${product.version}.yaml"/>
-            <arg value="--catalog"/>
-            <arg value="${catalog.name}"/>
+            <arg line="products:publish --server ${APIC_SERVER} --org ${APIC_ORG} --catalog ${CATALOG_NAME} ${PRODUCT_FILE}"/>
         </exec>
+    </target>
+
+    <target name="ci" depends="login,validate,api-process,product-process,publish">
+        <echo message="✅ CI/CD Pipeline completed successfully."/>
     </target>
 
 </project>
