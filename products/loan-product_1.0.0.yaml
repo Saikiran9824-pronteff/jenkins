@@ -13,7 +13,6 @@ plans:
         value: 100/1hour
     apis:
       loan-api: {}
-      hello1.0.0: {}
 apis:
   loan-api:
     $ref: loan-api_1.0.0.yaml
