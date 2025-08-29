@@ -55,16 +55,10 @@
 
         <echo message="API exists? ${api.exists}" />
 
-        <!-- Create or Update using Bash branching -->
-        <exec executable="bash">
+        <!-- Create or Update API -->
+        <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg line="if [ '${api.exists}' = 'true' ]; then
-                            echo '🔄 Updating existing draft API ${api.name}:${api.version}';
-                            apic draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}.yaml;
-                      else
-                            echo '🆕 Creating new draft API ${api.name}:${api.version}';
-                            apic draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}.yaml;
-                      fi"/>
+            <arg value="if [ '${api.exists}' = 'true' ]; then apic draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}.yaml; else apic draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}.yaml; fi"/>
         </exec>
     </target>
 
@@ -84,27 +78,17 @@
 
         <echo message="Product exists? ${product.exists}" />
 
-        <!-- Create or Update using Bash branching -->
-        <exec executable="bash">
+        <!-- Create or Update Product -->
+        <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg line="if [ '${product.exists}' = 'true' ]; then
-                            echo '🔄 Updating existing draft Product ${product.name}:${product.version}';
-                            apic draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}.yaml;
-                      else
-                            echo '🆕 Creating new draft Product ${product.name}:${product.version}';
-                            apic draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}.yaml;
-                      fi"/>
+            <arg value="if [ '${product.exists}' = 'true' ]; then apic draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}.yaml; else apic draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}.yaml; fi"/>
         </exec>
     </target>
 
     <!-- ================== Publish Product ================== -->
-    <target name="publish-product">
-        <condition property="do.publish">
-            <isset property="publish"/>
-        </condition>
-
+    <target name="publish-product" if="publish">
         <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
-        <exec executable="apic" failonerror="true" if="do.publish">
+        <exec executable="apic" failonerror="true">
             <arg value="products:publish"/>
             <arg value="${product.dir}/${product.name}.yaml"/>
             <arg value="--catalog"/>
