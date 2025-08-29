@@ -58,7 +58,6 @@
 
     <target name="api-create" unless="api.exists.true">
         <echo message="🆕 Creating new draft API ${API_NAME}:${API_VERSION}"/>
-        <mkdir dir="apis/${API_NAME}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
             <arg value="apis/${API_NAME}_${API_VERSION}.yaml"/>
@@ -110,7 +109,6 @@
 
     <target name="product-create" unless="product.exists.true">
         <echo message="🆕 Creating new draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
-        <mkdir dir="products/${PRODUCT_NAME}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
             <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
@@ -151,8 +149,44 @@
         </exec>
     </target>
 
+    <!-- Backup API & Product YAMLs per folder -->
+    <target name="backup" depends="publish">
+        <tstamp>
+            <format property="build.timestamp" pattern="yyyy-MM-dd_HH-mm-ss"/>
+        </tstamp>
+
+        <!-- Ensure per-API/Product folders exist -->
+        <mkdir dir="apis/${API_NAME}"/>
+        <mkdir dir="products/${PRODUCT_NAME}"/>
+
+        <!-- Copy API YAML -->
+        <copy file="apis/${API_NAME}_${API_VERSION}.yaml"
+              todir="apis/${API_NAME}" overwrite="true"/>
+
+        <!-- Copy Product YAML -->
+        <copy file="products/${PRODUCT_NAME}_${API_VERSION}.yaml"
+              todir="products/${PRODUCT_NAME}" overwrite="true"/>
+
+        <!-- Git commit -->
+        <exec executable="git" failonerror="true">
+            <arg value="add"/>
+            <arg value="."/>
+        </exec>
+        <exec executable="git" failonerror="true">
+            <arg value="commit"/>
+            <arg value="-m"/>
+            <!-- Escape & as &amp; -->
+            <arg value="Backup ${API_NAME}:${API_VERSION} &amp; ${PRODUCT_NAME}:${API_VERSION} at ${build.timestamp}"/>
+        </exec>
+        <exec executable="git" failonerror="true">
+            <arg value="push"/>
+            <arg value="origin"/>
+            <arg value="main"/>
+        </exec>
+    </target>
+
     <!-- CI Pipeline -->
-    <target name="ci" depends="publish">
-        <echo message="🎉 CI/CD pipeline completed successfully!"/>
+    <target name="ci" depends="backup">
+        <echo message="🎉 CI/CD pipeline completed successfully with backup!"/>
     </target>
 </project>
