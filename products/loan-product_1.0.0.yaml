@@ -17,8 +17,6 @@ plans:
 apis:
   loan-api:
     $ref: loan-api_1.0.0.yaml
-  hello1.0.0:
-    $ref: hello_1.0.0.yaml
 visibility:
   view:
     type: public
