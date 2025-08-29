@@ -12,9 +12,9 @@
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--username"/>
-            <arg value="admin"/>
+            <arg value="umesh"/>
             <arg value="--password"/>
-            <arg value="Passw0rd!"/>
+            <arg value="!n0r1t5@C"/>
             <arg value="--realm"/>
             <arg value="provider/default-idp-2"/>
         </exec>
