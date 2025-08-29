@@ -4,7 +4,7 @@
     <property name="PRODUCT_NAME" value="loan-product"/>
     <property name="CATALOG_NAME" value="prod"/>
 
-    <!-- Hardcoded APIC login details -->
+    <!-- Hardcoded APIC login -->
     <target name="login">
         <echo message="🔐 Logging in to API Connect..."/>
         <exec executable="apic" failonerror="true">
@@ -43,7 +43,7 @@
         <echo message="API exists? ${api.exists}"/>
     </target>
 
-    <!-- Process API: create or update -->
+    <!-- Process API -->
     <target name="api-process" depends="api-check">
         <condition property="api.exists.true">
             <and>
@@ -51,9 +51,8 @@
                 <matches string="${api.exists}" pattern=".*${API_NAME}:${API_VERSION}.*"/>
             </and>
         </condition>
-
-        <antcall target="api-update" />
-        <antcall target="api-create" />
+        <antcall target="api-update"/>
+        <antcall target="api-create"/>
     </target>
 
     <target name="api-create" unless="api.exists.true">
@@ -85,7 +84,8 @@
     <target name="product-check" depends="api-process">
         <echo message="🔎 Checking if Product exists..."/>
         <exec executable="apic" failonerror="false" outputproperty="product.exists">
-            <arg value="draft-products:list-all"/>
+            <arg value="draft-products:get"/>
+            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
@@ -94,7 +94,7 @@
         <echo message="Product exists? ${product.exists}"/>
     </target>
 
-    <!-- Process Product: create or update -->
+    <!-- Process Product -->
     <target name="product-process" depends="product-check">
         <condition property="product.exists.true">
             <and>
@@ -102,7 +102,6 @@
                 <matches string="${product.exists}" pattern=".*${PRODUCT_NAME}:${API_VERSION}.*"/>
             </and>
         </condition>
-
         <antcall target="product-update"/>
         <antcall target="product-create"/>
     </target>
@@ -123,13 +122,13 @@
         <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
+            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
+            <!-- ✅ Explicit correct YAML file (fix for hello_1.0.0.yaml issue) -->
+            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
-            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
-            <!-- ✅ force correct file -->
-            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
