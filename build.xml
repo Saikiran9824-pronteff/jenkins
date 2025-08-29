@@ -12,7 +12,7 @@
     <property name="publish" value="${publish}"/>
 
     <!-- ================== Main CI target ================== -->
-    <target name="ci" depends="login,symlink-latest,validate,api-process,product-process,publish-product"/>
+    <target name="ci" depends="login,validate,api-process,product-process,publish-product"/>
 
     <!-- ================== Login ================== -->
     <target name="login">
@@ -30,32 +30,23 @@
         </exec>
     </target>
 
-    <!-- ================== Create symlink for latest API YAML ================== -->
-    <target name="symlink-latest">
-        <echo message="🔗 Creating symlink to latest API YAML..." />
-        <exec executable="bash" failonerror="true">
-            <arg value="-c"/>
-            <arg value="ln -sf ${api.dir}/${api.name}_${api.version}.yaml ${api.dir}/${api.name}.yaml"/>
-        </exec>
-    </target>
-
     <!-- ================== Validate API ================== -->
     <target name="validate">
         <echo message="✅ Validating API YAML for ${api.name}" />
         <exec executable="apic" failonerror="true">
             <arg value="validate"/>
-            <arg value="${api.dir}/${api.name}.yaml"/>
+            <arg value="${api.dir}/${api.name}_${api.version}.yaml"/>
         </exec>
     </target>
 
-    <!-- ================== API Draft ================== -->
+    <!-- ================== API Draft Process ================== -->
     <target name="api-process" depends="validate">
         <echo message="📦 Processing draft API ${api.name}:${api.version}..." />
 
-        <!-- Check if API exists -->
+        <!-- Check if API draft exists -->
         <exec executable="bash" failonerror="false" outputproperty="api.exists.check">
             <arg value="-c"/>
-            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}'"/>
+            <arg value="apic draft-apis:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${api.name}:${api.version}' || true"/>
         </exec>
 
         <condition property="api.exists">
@@ -64,44 +55,25 @@
 
         <echo message="API exists? ${api.exists}" />
 
-        <!-- Create or Update -->
-        <target name="api-create">
-            <echo message="🆕 Creating draft API ${api.name}:${api.version}" />
-            <exec executable="apic" failonerror="true">
-                <arg value="draft-apis:create"/>
-                <arg value="--server"/>
-                <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-                <arg value="--org"/>
-                <arg value="indusapi-np"/>
-                <arg value="${api.dir}/${api.name}.yaml"/>
-            </exec>
-        </target>
-
-        <target name="api-update">
-            <echo message="🔄 Updating existing draft API ${api.name}:${api.version}" />
-            <exec executable="apic" failonerror="true">
-                <arg value="draft-apis:update"/>
-                <arg value="--server"/>
-                <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-                <arg value="--org"/>
-                <arg value="indusapi-np"/>
-                <arg value="${api.name}:${api.version}"/>
-                <arg value="${api.dir}/${api.name}.yaml"/>
-            </exec>
-        </target>
-
-        <!-- Branching manually without if/unless -->
-        <antcall target="api-update" />
+        <!-- Create or Update API draft -->
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="if [ '${api.exists}' = 'true' ]; then \
+                           apic draft-apis:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.name}:${api.version} ${api.dir}/${api.name}_${api.version}.yaml; \
+                       else \
+                           apic draft-apis:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${api.dir}/${api.name}_${api.version}.yaml; \
+                       fi"/>
+        </exec>
     </target>
 
-    <!-- ================== Product Draft ================== -->
+    <!-- ================== Product Draft Process ================== -->
     <target name="product-process">
         <echo message="📦 Processing draft Product ${product.name}:${product.version}" />
 
-        <!-- Check if Product exists -->
+        <!-- Check if Product draft exists -->
         <exec executable="bash" failonerror="false" outputproperty="product.exists.check">
             <arg value="-c"/>
-            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}'"/>
+            <arg value="apic draft-products:list-all --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np | grep -w '${product.name}:${product.version}' || true"/>
         </exec>
 
         <condition property="product.exists">
@@ -110,32 +82,15 @@
 
         <echo message="Product exists? ${product.exists}" />
 
-        <target name="product-create">
-            <echo message="🆕 Creating draft Product ${product.name}:${product.version}" />
-            <exec executable="apic" failonerror="true">
-                <arg value="draft-products:create"/>
-                <arg value="--server"/>
-                <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-                <arg value="--org"/>
-                <arg value="indusapi-np"/>
-                <arg value="${product.dir}/${product.name}.yaml"/>
-            </exec>
-        </target>
-
-        <target name="product-update">
-            <echo message="🔄 Updating existing draft Product ${product.name}:${product.version}" />
-            <exec executable="apic" failonerror="true">
-                <arg value="draft-products:update"/>
-                <arg value="--server"/>
-                <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-                <arg value="--org"/>
-                <arg value="indusapi-np"/>
-                <arg value="${product.name}:${product.version}"/>
-                <arg value="${product.dir}/${product.name}.yaml"/>
-            </exec>
-        </target>
-
-        <antcall target="product-update" />
+        <!-- Create or Update Product draft -->
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="if [ '${product.exists}' = 'true' ]; then \
+                           apic draft-products:update --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.name}:${product.version} ${product.dir}/${product.name}_${product.version}.yaml; \
+                       else \
+                           apic draft-products:create --server https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com --org indusapi-np ${product.dir}/${product.name}_${product.version}.yaml; \
+                       fi"/>
+        </exec>
     </target>
 
     <!-- ================== Publish Product ================== -->
@@ -143,7 +98,7 @@
         <echo message="🚀 Publishing Product ${product.name}:${product.version} to catalog ${catalog.name}" />
         <exec executable="apic" failonerror="true">
             <arg value="products:publish"/>
-            <arg value="${product.dir}/${product.name}.yaml"/>
+            <arg value="${product.dir}/${product.name}_${product.version}.yaml"/>
             <arg value="--catalog"/>
             <arg value="${catalog.name}"/>
         </exec>
