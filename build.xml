@@ -73,12 +73,12 @@
         <echo message="♻️ Updating existing draft API ${API_NAME}:${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
+            <arg value="${API_NAME}:${API_VERSION}"/>
+            <arg value="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
-            <arg value="${API_NAME}:${API_VERSION}"/>
-            <arg value="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
