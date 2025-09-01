@@ -133,12 +133,12 @@
         <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
+            <arg value="${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
+            <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${PRODUCT_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
-            <arg value="${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
-            <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${PRODUCT_VERSION}.yaml"/>
         </exec>
     </target>
 
