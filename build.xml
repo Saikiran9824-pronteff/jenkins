@@ -82,15 +82,6 @@
         </exec>
     </target>
 
-    <!-- ================== FIX PRODUCT REFS ================== -->
-    <target name="fix-product-refs" depends="api-process">
-        <echo message="🔧 Fixing product references with script..."/>
-        <exec executable="/var/lib/jenkins/scripts/fix-product-refs1.sh" failonerror="true">
-            <arg value="${basedir}/products"/>
-            <arg value="${basedir}/apis"/>
-        </exec>
-    </target>
-
     <!-- ================== PRODUCT CHECK ================== -->
     <target name="product-check" depends="fix-product-refs">
         <echo message="🔎 Checking if Product exists..."/>
