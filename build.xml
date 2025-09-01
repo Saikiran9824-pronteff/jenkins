@@ -80,6 +80,17 @@
         </exec>
     </target>
 
+    <!-- =============================== -->
+    <!--  Fix Product refs using script  -->
+    <!-- =============================== -->
+    <target name="fix-product-refs" depends="api-process">
+        <echo message=":wrench: Fixing product references with script..."/>
+        <exec executable="/var/lib/jenkins/scripts/fix-product-refs.sh" failonerror="true">
+            <arg value="${basedir}/products"/>
+            <arg value="${basedir}/apis"/>
+        </exec>
+    </target>
+    
     <!-- ================== PRODUCT CHECK ================== -->
     <target name="product-check" depends="api-process">
         <echo message="🔎 Checking if Product exists..."/>
