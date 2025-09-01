@@ -45,6 +45,27 @@
     <echo message="API exists? ${api.exists}"/>
   </target>
 
+  <!-- ================== BACKUP ================== -->
+  <target name="backup">
+    <echo message="📦 Backing up API & Product YAMLs with timestamp..."/>
+
+    <tstamp>
+      <format property="backup.timestamp" pattern="yyyyMMdd_HHmmss"/>
+    </tstamp>
+
+    <!-- Backup API -->
+    <copy file="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"
+          tofile="apis/${API_NAME}/${API_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
+          overwrite="false"/>
+
+    <!-- Backup Product -->
+    <copy file="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"
+          tofile="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
+          overwrite="false"/>
+
+    <echo message="✅ Backup created: ${backup.timestamp}"/>
+  </target>
+
   <!-- ================== PROCESS API ================== -->
   <target name="api-process" depends="api-check">
     <condition property="api.exists.true">
@@ -57,7 +78,7 @@
     <antcall target="api-create"/>
   </target>
 
-  <target name="api-create" unless="api.exists.true">
+  <target name="api-create" unless="api.exists.true" depends="backup">
     <echo message="🆕 Creating new draft API ${API_NAME}:${API_VERSION}"/>
     <exec executable="apic" failonerror="true">
       <arg value="draft-apis:create"/>
@@ -69,7 +90,7 @@
     </exec>
   </target>
 
-  <target name="api-update" if="api.exists.true">
+  <target name="api-update" if="api.exists.true" depends="backup">
     <echo message="♻️ Updating existing draft API ${API_NAME}:${API_VERSION}"/>
     <exec executable="apic" failonerror="true">
       <arg value="draft-apis:update"/>
@@ -82,14 +103,14 @@
   </target>
 
   <!-- ================== FIX PRODUCT API REFS ================== -->
-<target name="fix-refs" depends="api-process">
-  <echo message="🔧 Fixing API references in product YAML..."/>
-  <exec executable="bash" failonerror="true">
-    <arg value="/var/lib/jenkins/scripts/fix-refs.sh"/>
-    <arg value="products/${PRODUCT_NAME}"/>
-    <arg value="apis"/>
-  </exec>
-</target>
+  <target name="fix-refs" depends="api-process">
+    <echo message="🔧 Fixing API references in product YAML..."/>
+    <exec executable="bash" failonerror="true">
+      <arg value="/var/lib/jenkins/scripts/fix-refs.sh"/>
+      <arg value="products/${PRODUCT_NAME}"/>
+      <arg value="apis"/>
+    </exec>
+  </target>
 
   <!-- ================== CHECK PRODUCT ================== -->
   <target name="product-check" depends="fix-refs">
@@ -117,7 +138,7 @@
     <antcall target="product-create"/>
   </target>
 
-  <target name="product-create" unless="product.exists.true">
+  <target name="product-create" unless="product.exists.true" depends="backup">
     <echo message="🆕 Creating new draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
     <exec executable="apic" failonerror="true">
       <arg value="draft-products:create"/>
@@ -129,7 +150,7 @@
     </exec>
   </target>
 
-  <target name="product-update" if="product.exists.true">
+  <target name="product-update" if="product.exists.true" depends="backup">
     <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
     <exec executable="apic" failonerror="true">
       <arg value="draft-products:update"/>
