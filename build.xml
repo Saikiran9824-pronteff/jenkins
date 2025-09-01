@@ -143,17 +143,21 @@
   </target>
 
   <!-- ================== PUBLISH PRODUCT ================== -->
-  <target name="publish" depends="product-process">
-    <echo message="🚀 Publishing Product ${PRODUCT_NAME}:${API_VERSION} to catalog ${CATALOG_NAME}"/>
-    <exec executable="apic" failonerror="true">
-      <arg value="products:publish"/>
-      <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
-      <arg value="--catalog"/>
-      <arg value="indusapi-np/${CATALOG_NAME}"/>
-      <arg value="--server"/>
-      <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
-    </exec>
-  </target>
+<target name="publish" depends="product-process">
+  <echo message="🚀 Publishing Product ${PRODUCT_NAME}_${API_VERSION}_fixed.yaml to catalog ${CATALOG_NAME}"/>
+  <exec executable="apic" failonerror="true">
+    <arg value="products:publish"/>
+    <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_fixed.yaml"/>
+    <arg value="--scope"/>
+    <arg value="catalog"/>
+    <arg value="--catalog"/>
+    <arg value="${CATALOG_NAME}"/>
+    <arg value="--server"/>
+    <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
+    <arg value="--org"/>
+    <arg value="indusapi-np"/>
+  </exec>
+</target>
 
   <!-- ================== CI PIPELINE ================== -->
   <target name="ci" depends="publish">
