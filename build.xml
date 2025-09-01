@@ -85,7 +85,7 @@
     <!-- =============================== -->
     <target name="fix-product-refs" depends="api-process">
         <echo message=":wrench: Fixing product references with script..."/>
-        <exec executable="/var/lib/jenkins/scripts/fix-product-refs.sh" failonerror="true">
+        <exec executable="/var/lib/jenkins/scripts/fix-product-refs1.sh" failonerror="true">
             <arg value="${basedir}/products"/>
             <arg value="${basedir}/apis"/>
         </exec>
