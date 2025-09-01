@@ -45,26 +45,26 @@
     <echo message="API exists? ${api.exists}"/>
   </target>
 
-  <!-- ================== BACKUP ================== -->
-  <target name="backup">
-    <echo message="📦 Backing up API &amp; Product YAMLs with timestamp..."/>
+<!-- ================== BACKUP ==================
+<target name="backup">
+  <echo message="📦 Backing up API &amp; Product YAMLs with timestamp..."/>
 
-    <tstamp>
-      <format property="backup.timestamp" pattern="yyyyMMdd_HHmmss"/>
-    </tstamp>
+  <tstamp>
+    <format property="backup.timestamp" pattern="yyyyMMdd_HHmmss"/>
+  </tstamp>
 
-    <!-- Backup API -->
-    <copy file="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"
-          tofile="apis/${API_NAME}/${API_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
-          overwrite="false"/>
+  <copy file="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"
+        tofile="apis/${API_NAME}/${API_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
+        overwrite="false"/>
 
-    <!-- Backup Product -->
-    <copy file="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"
-          tofile="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
-          overwrite="false"/>
+  <copy file="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"
+        tofile="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_${backup.timestamp}.yaml"
+        overwrite="false"/>
 
-    <echo message="✅ Backup created: ${backup.timestamp}"/>
-  </target>
+  <echo message="✅ Backup created: ${backup.timestamp}"/>
+</target>
+================== -->
+
 
   <!-- ================== PROCESS API ================== -->
   <target name="api-process" depends="api-check">
