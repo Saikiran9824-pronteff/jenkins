@@ -85,14 +85,9 @@
   <!-- ================== FIX PRODUCT API REFS ================== -->
   <target name="fix-refs" depends="api-process">
     <echo message="🔧 Fixing API references in product YAML..."/>
-    <copy file="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"
-          tofile="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_fixed.yaml"/>
-    <exec executable="sed" failonerror="true">
-      <arg value="-i"/>
-      <arg value="-E"/>
-      <!-- Rewrite relative refs to correct apis/ path -->
-      <arg value="s#ref: \./([a-zA-Z0-9_-]+)_([0-9]+\.[0-9]+\.[0-9]+)\.yaml#ref: ../../apis/\1/\1_\2.yaml#g"/>
-      <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_fixed.yaml"/>
+    <exec executable="bash" failonerror="true">
+      <arg value="scripts/fix-refs.sh"/>
+      <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
     </exec>
   </target>
 
