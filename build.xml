@@ -47,7 +47,7 @@
 
   <!-- ================== BACKUP ================== -->
   <target name="backup">
-    <echo message="📦 Backing up API & Product YAMLs with timestamp..."/>
+    <echo message="📦 Backing up API &amp; Product YAMLs with timestamp..."/>
 
     <tstamp>
       <format property="backup.timestamp" pattern="yyyyMMdd_HHmmss"/>
