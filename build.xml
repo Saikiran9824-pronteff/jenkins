@@ -82,14 +82,14 @@
   </target>
 
   <!-- ================== FIX PRODUCT API REFS ================== -->
-  <target name="fix-refs" depends="api-process">
-    <echo message="🔧 Fixing API references in product YAML..."/>
-    <exec executable="bash" failonerror="true">
-      <arg value="/var/lib/jenkins/scripts/fix-refs.sh"/>
-      <arg value="products/${PRODUCT_NAME}"/>
-      <arg value="apis/${API_NAME}"/>
-    </exec>
-  </target>
+<target name="fix-refs" depends="api-process">
+  <echo message="🔧 Fixing API references in product YAML..."/>
+  <exec executable="bash" failonerror="true">
+    <arg value="/var/lib/jenkins/scripts/fix-refs.sh"/>
+    <arg value="products/${PRODUCT_NAME}"/>
+    <arg value="apis"/>
+  </exec>
+</target>
 
   <!-- ================== CHECK PRODUCT ================== -->
   <target name="product-check" depends="fix-refs">
