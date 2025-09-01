@@ -86,7 +86,7 @@
   <target name="fix-refs" depends="api-process">
     <echo message="🔧 Fixing API references in product YAML..."/>
     <exec executable="bash" failonerror="true">
-      <arg value="scripts/fix-refs.sh"/>
+      <arg value="/var/lib/jenkins/scripts/fix-refs.sh"/>
       <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
     </exec>
   </target>
