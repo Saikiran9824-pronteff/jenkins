@@ -180,8 +180,14 @@
             <arg value="${env.GIT_COMMITTER_NAME:-Jenkins}"/>
         </exec>
 
+        <!-- Stash uncommitted changes before switching branch -->
+        <exec executable="git" failonerror="false">
+            <arg value="stash"/>
+            <arg value="--include-untracked"/>
+        </exec>
+
         <!-- Ensure we are on main branch -->
-        <exec executable="git" failonerror="true">
+        <exec executable="git" failonerror="false">
             <arg value="checkout"/>
             <arg value="main"/>
         </exec>
@@ -189,6 +195,12 @@
             <arg value="pull"/>
             <arg value="origin"/>
             <arg value="main"/>
+        </exec>
+
+        <!-- Re-apply stashed changes -->
+        <exec executable="git" failonerror="false">
+            <arg value="stash"/>
+            <arg value="pop"/>
         </exec>
 
         <!-- Add & Commit -->
@@ -200,6 +212,14 @@
             <arg value="commit"/>
             <arg value="-m"/>
             <arg value="Backup ${API_NAME}:${API_VERSION} &amp; ${PRODUCT_NAME}:${API_VERSION} at ${build.timestamp}"/>
+        </exec>
+
+        <!-- Configure remote with PAT -->
+        <exec executable="git" failonerror="true">
+            <arg value="remote"/>
+            <arg value="set-url"/>
+            <arg value="origin"/>
+            <arg value="https://Saikiran9824-pronteff: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@github.com/Saikiran9824-pronteff/jenkins.git"/>
         </exec>
 
         <!-- Push directly to main branch -->
