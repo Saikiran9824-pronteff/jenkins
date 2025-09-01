@@ -44,6 +44,7 @@
         <echo message="API exists? ${api.exists}"/>
     </target>
 
+    <!-- ================== API PROCESS ================== -->
     <target name="api-process" depends="api-check">
         <condition property="api.exists.true">
             <and>
@@ -84,7 +85,7 @@
     <!--  Fix Product refs using script  -->
     <!-- =============================== -->
     <target name="fix-product-refs" depends="api-process">
-        <echo message=":wrench: Fixing product references with script..."/>
+        <echo message="🔧 Fixing product references with script..."/>
         <exec executable="/var/lib/jenkins/scripts/fix-product-refs1.sh" failonerror="true">
             <arg value="${basedir}/products"/>
             <arg value="${basedir}/apis"/>
@@ -92,7 +93,7 @@
     </target>
     
     <!-- ================== PRODUCT CHECK ================== -->
-    <target name="product-check" depends="api-process">
+    <target name="product-check" depends="fix-product-refs">
         <echo message="🔎 Checking if Product exists..."/>
         <exec executable="apic" failonerror="false" outputproperty="product.exists">
             <arg value="draft-products:get"/>
@@ -105,6 +106,7 @@
         <echo message="Product exists? ${product.exists}"/>
     </target>
 
+    <!-- ================== PRODUCT PROCESS ================== -->
     <target name="product-process" depends="product-check">
         <condition property="product.exists.true">
             <and>
