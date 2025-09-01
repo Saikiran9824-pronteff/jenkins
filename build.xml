@@ -1,8 +1,9 @@
 <project name="apic-cicd" default="ci" basedir=".">
-    <!-- Default properties (can be overridden from Jenkins parameters) -->
+    <!-- ================== Default Properties ================== -->
     <property name="API_NAME" value="loan-api"/>
     <property name="API_VERSION" value="1.0.0"/>
     <property name="PRODUCT_NAME" value="loan-product"/>
+    <property name="PRODUCT_VERSION" value="1.0.0"/>
     <property name="CATALOG_NAME" value="prod"/>
 
     <!-- ================== LOGIN ================== -->
@@ -26,7 +27,7 @@
         <echo message="✅ Validating API YAML for ${API_NAME}_${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="validate"/>
-            <arg value="apis/${API_NAME}_${API_VERSION}.yaml"/>
+            <arg value="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
@@ -44,6 +45,7 @@
         <echo message="API exists? ${api.exists}"/>
     </target>
 
+    <!-- ================== API PROCESS ================== -->
     <target name="api-process" depends="api-check">
         <condition property="api.exists.true">
             <and>
@@ -59,7 +61,7 @@
         <echo message="🆕 Creating new draft API ${API_NAME}:${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:create"/>
-            <arg value="apis/${API_NAME}_${API_VERSION}.yaml"/>
+            <arg value="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
@@ -71,21 +73,21 @@
         <echo message="♻️ Updating existing draft API ${API_NAME}:${API_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-apis:update"/>
+            <arg value="${API_NAME}:${API_VERSION}"/>
+            <arg value="apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
-            <arg value="${API_NAME}:${API_VERSION}"/>
-            <arg value="apis/${API_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
     <!-- ================== PRODUCT CHECK ================== -->
-    <target name="product-check" depends="api-process">
+    <target name="product-check">
         <echo message="🔎 Checking if Product exists..."/>
         <exec executable="apic" failonerror="false" outputproperty="product.exists">
             <arg value="draft-products:get"/>
-            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
+            <arg value="${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
@@ -94,11 +96,12 @@
         <echo message="Product exists? ${product.exists}"/>
     </target>
 
+    <!-- ================== PRODUCT PROCESS ================== -->
     <target name="product-process" depends="product-check">
         <condition property="product.exists.true">
             <and>
                 <isset property="product.exists"/>
-                <matches string="${product.exists}" pattern=".*${PRODUCT_NAME}:${API_VERSION}.*"/>
+                <matches string="${product.exists}" pattern=".*${PRODUCT_NAME}:${PRODUCT_VERSION}.*"/>
             </and>
         </condition>
         <antcall target="product-update"/>
@@ -106,10 +109,10 @@
     </target>
 
     <target name="product-create" unless="product.exists.true">
-        <echo message="🆕 Creating new draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
+        <echo message="🆕 Creating new draft Product ${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:create"/>
-            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
+            <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${PRODUCT_VERSION}_draft.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
@@ -118,24 +121,24 @@
     </target>
 
     <target name="product-update" if="product.exists.true">
-        <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${API_VERSION}"/>
+        <echo message="♻️ Updating existing draft Product ${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
         <exec executable="apic" failonerror="true">
             <arg value="draft-products:update"/>
+            <arg value="${PRODUCT_NAME}:${PRODUCT_VERSION}"/>
+            <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${PRODUCT_VERSION}_draft.yaml"/>
             <arg value="--server"/>
             <arg value="https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"/>
             <arg value="--org"/>
             <arg value="indusapi-np"/>
-            <arg value="${PRODUCT_NAME}:${API_VERSION}"/>
-            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
         </exec>
     </target>
 
     <!-- ================== PUBLISH ================== -->
     <target name="publish" depends="product-process">
-        <echo message="🚀 Publishing Product ${PRODUCT_NAME}_${API_VERSION}.yaml to catalog ${CATALOG_NAME}"/>
+        <echo message="🚀 Publishing Product ${PRODUCT_NAME}_${PRODUCT_VERSION}_draft.yaml to catalog ${CATALOG_NAME}"/>
         <exec executable="apic" failonerror="true">
             <arg value="products:publish"/>
-            <arg value="products/${PRODUCT_NAME}_${API_VERSION}.yaml"/>
+            <arg value="products/${PRODUCT_NAME}/${PRODUCT_NAME}_${PRODUCT_VERSION}_draft.yaml"/>
             <arg value="--scope"/>
             <arg value="catalog"/>
             <arg value="--catalog"/>
@@ -148,7 +151,7 @@
     </target>
 
     <!-- ================== CI PIPELINE ================== -->
-    <target name="ci" depends="backup">
-        <echo message="🎉 CI/CD pipeline completed successfully with backup!"/>
+    <target name="ci" depends="publish">
+        <echo message="🎉 CI/CD pipeline completed successfully!"/>
     </target>
 </project>
