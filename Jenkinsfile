@@ -16,7 +16,7 @@ pipeline {
         stage('Login') {
             steps {
                 sh """
-                  echo "🔐 Logging in to API Connect..."
+                  echo "🔐 Logging in..."
                   apic login \
                     --server "${SERVER}" \
                     --username "${USERNAME}" \
@@ -35,14 +35,13 @@ pipeline {
             }
         }
 
-        stage('Check API') {
+        stage('Check API Exists') {
             steps {
                 sh """
-                  echo "🔎 Checking if API exists..."
-                  apic draft-apis:get \
+                  echo "🔎 Checking API exists with list-all..."
+                  apic draft-apis:list-all \
                     --server "${SERVER}" \
-                    --org "${ORG}" \
-                    ${API_NAME}:${API_VERSION} || true
+                    --org "${ORG}" | grep -w "${API_NAME}:${API_VERSION}" || true
                 """
             }
         }
@@ -52,10 +51,9 @@ pipeline {
                 script {
                     def exists = sh(
                         script: """
-                          apic draft-apis:get \
+                          apic draft-apis:list-all \
                             --server "${SERVER}" \
-                            --org "${ORG}" \
-                            ${API_NAME}:${API_VERSION} >/dev/null 2>&1 && echo true || echo false
+                            --org "${ORG}" | grep -w "${API_NAME}:${API_VERSION}" >/dev/null && echo true || echo false
                         """,
                         returnStdout: true
                     ).trim()
@@ -81,23 +79,13 @@ pipeline {
             }
         }
 
-        stage('Fix Product References') {
+        stage('Check Product Exists') {
             steps {
                 sh """
-                  echo "🔧 Fixing API references in product YAML..."
-                  bash /var/lib/jenkins/scripts/fix-refs.sh products/${PRODUCT_NAME} apis
-                """
-            }
-        }
-
-        stage('Check Product') {
-            steps {
-                sh """
-                  echo "🔎 Checking if Product exists..."
-                  apic draft-products:get \
+                  echo "🔎 Checking Product exists with list-all..."
+                  apic draft-products:list-all \
                     --server "${SERVER}" \
-                    --org "${ORG}" \
-                    ${PRODUCT_NAME}:${API_VERSION} || true
+                    --org "${ORG}" | grep -w "${PRODUCT_NAME}:${API_VERSION}" || true
                 """
             }
         }
@@ -107,10 +95,9 @@ pipeline {
                 script {
                     def prodExists = sh(
                         script: """
-                          apic draft-products:get \
+                          apic draft-products:list-all \
                             --server "${SERVER}" \
-                            --org "${ORG}" \
-                            ${PRODUCT_NAME}:${API_VERSION} >/dev/null 2>&1 && echo true || echo false
+                            --org "${ORG}" | grep -w "${PRODUCT_NAME}:${API_VERSION}" >/dev/null && echo true || echo false
                         """,
                         returnStdout: true
                     ).trim()
@@ -147,19 +134,6 @@ pipeline {
                     --catalog ${CATALOG_NAME} \
                     products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml
                 """
-            }
-        }
-
-        stage('Backup') {
-            steps {
-                script {
-                    def ts = sh(script: "date +%Y%m%d_%H%M%S", returnStdout: true).trim()
-                    sh """
-                      echo "📦 Backing up with timestamp ${ts}"
-                      cp apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml apis/${API_NAME}/${API_NAME}_${API_VERSION}_${ts}.yaml
-                      cp products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_${ts}.yaml
-                    """
-                }
             }
         }
     }
