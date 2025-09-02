@@ -1,0 +1,156 @@
+pipeline {
+    agent any
+
+    environment {
+        API_NAME      = "loan-api"
+        API_VERSION   = "1.0.0"
+        PRODUCT_NAME  = "loan-product"
+        CATALOG_NAME  = "prod"
+        SERVER        = "https://small-1-mgmt-api-manager-cp4i.apps.ocp.prontefflabs.com"
+        ORG           = "indusapi-np"
+        REALM         = "provider/default-idp-2"
+        USERNAME      = "umesh"
+        PASSWORD      = "!n0r1t5@C"
+    }
+
+    stages {
+        stage('Login') {
+            steps {
+                echo "🔐 Logging in to API Connect..."
+                sh """
+                  apic login --server $SERVER \
+                             --username $USERNAME \
+                             --password "$PASSWORD" \
+                             --realm $REALM
+                """
+            }
+        }
+
+        stage('Validate API') {
+            steps {
+                echo "✅ Validating API YAML for ${API_NAME}_${API_VERSION}"
+                sh """
+                  apic validate apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml
+                """
+            }
+        }
+
+        stage('Check API') {
+            steps {
+                script {
+                    echo "🔎 Checking if API exists..."
+                    def result = sh (
+                        script: "apic draft-apis:get ${API_NAME}:${API_VERSION} --server $SERVER --org $ORG || true",
+                        returnStdout: true
+                    ).trim()
+                    env.API_EXISTS = result.contains("${API_NAME}:${API_VERSION}") ? "true" : "false"
+                    echo "API exists? ${env.API_EXISTS}"
+                }
+            }
+        }
+
+        stage('Process API') {
+            steps {
+                script {
+                    if (env.API_EXISTS == "true") {
+                        echo "♻️ Updating existing draft API ${API_NAME}:${API_VERSION}"
+                        sh """
+                          apic draft-apis:update ${API_NAME}:${API_VERSION} apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml \
+                              --server $SERVER --org $ORG
+                        """
+                    } else {
+                        echo "🆕 Creating new draft API ${API_NAME}:${API_VERSION}"
+                        sh """
+                          apic draft-apis:create apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml \
+                              --server $SERVER --org $ORG
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Fix Refs in Product') {
+            steps {
+                echo "🔧 Fixing API references in product YAML..."
+                sh """
+                  bash /var/lib/jenkins/scripts/fix-refs.sh products/${PRODUCT_NAME} apis
+                """
+            }
+        }
+
+        stage('Check Product') {
+            steps {
+                script {
+                    echo "🔎 Checking if Product exists..."
+                    def result = sh (
+                        script: "apic draft-products:get ${PRODUCT_NAME}:${API_VERSION} --server $SERVER --org $ORG || true",
+                        returnStdout: true
+                    ).trim()
+                    env.PRODUCT_EXISTS = result.contains("${PRODUCT_NAME}:${API_VERSION}") ? "true" : "false"
+                    echo "Product exists? ${env.PRODUCT_EXISTS}"
+                }
+            }
+        }
+
+        stage('Process Product') {
+            steps {
+                script {
+                    if (env.PRODUCT_EXISTS == "true") {
+                        echo "♻️ Updating existing draft Product ${PRODUCT_NAME}:${API_VERSION}"
+                        sh """
+                          apic draft-products:update ${PRODUCT_NAME}:${API_VERSION} products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml \
+                              --server $SERVER --org $ORG
+                        """
+                    } else {
+                        echo "🆕 Creating new draft Product ${PRODUCT_NAME}:${API_VERSION}"
+                        sh """
+                          apic draft-products:create products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml \
+                              --server $SERVER --org $ORG
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Publish Product') {
+            steps {
+                echo "🚀 Publishing Product ${PRODUCT_NAME}_${API_VERSION}.yaml to catalog ${CATALOG_NAME}"
+                sh """
+                  apic products:publish products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml \
+                      --scope catalog \
+                      --catalog $CATALOG_NAME \
+                      --server $SERVER \
+                      --org $ORG
+                """
+            }
+        }
+
+        stage('Backup') {
+            steps {
+                script {
+                    echo "📦 Backing up API & Product YAMLs..."
+                    def timestamp = sh (
+                        script: "date +%Y%m%d_%H%M%S",
+                        returnStdout: true
+                    ).trim()
+
+                    sh """
+                      cp apis/${API_NAME}/${API_NAME}_${API_VERSION}.yaml apis/${API_NAME}/${API_NAME}_${API_VERSION}_${timestamp}.yaml
+                      cp products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}.yaml products/${PRODUCT_NAME}/${PRODUCT_NAME}_${API_VERSION}_${timestamp}.yaml
+                    """
+
+                    echo "✅ Backup created with timestamp: ${timestamp}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 CI/CD pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
+        }
+    }
+}
